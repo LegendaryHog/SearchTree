@@ -23,6 +23,9 @@ struct RBNode
     key_type  key_ {};
     Colors  color_  = Colors::Red;
     RBNode* parent_ = nullptr, left_ = nullptr, right_ = nullptr;
+
+    bool is_left_son() const noexcept {return this == parent_->left_;}
+    bool is_right_son() const noexcept {return this == parent_->right_;}
 };
 
 } // namespace anonymous
@@ -53,13 +56,6 @@ public:
 
     bool empty() const {return (size_ == 0);}
 
-    SearchTree(const SearchTree& other): size_ {other.size_}
-    {
-        root_ = recursive_copy(other.root_, Null_, other.Null_);
-        min_  = find_min();
-        max_  = find_max(); 
-    }
-
 private:
     node_ptr find_min() const
     {
@@ -75,6 +71,51 @@ private:
         return node;
     }
 
+public:
+    SearchTree(const SearchTree& other): size_ {other.size_}
+    {
+        if (empty())
+            return;
+
+        root_ = new node_type{other.root_->key_, other.root_->color_, Null_, Null_, Null_};
+        node_ptr this_current = root_;
+        node_ptr other_current = other.root_;
+
+        while (other_current != other.Null_)
+        {
+            if (other_current->left_ != other.Null_ && this_current->left_ == Null_)
+            {
+                this_current->left_ = new node_type{other_current->left_->key_, other_current->left_->color_, this_current, Null_, Null_};
+                other_current = other_current->left_;
+                this_current = this_current->left_;
+            }
+            else if (other_current->right_ != other.Null_ && this_current->right == Null_)
+            {
+                this_current->right_ = new node_type{other_current->left_->key_, other_current->left_->color_, this_current, Null_, Null_};
+                other_current = other_current->right_;
+                this_current = this_current->right_;
+            }
+            else
+            {
+                other_current = other_current->parent_;
+                this_current = this_current->parent_;
+            }
+        }
+
+        min_ = find_min();
+        max_ = find_max();
+    }
+
+// recursive copy ctor
+/*
+    SearchTree(const SearchTree& other): size_ {other.size_}
+    {
+        root_ = recursive_copy(other.root_, Null_, other.Null_);
+        min_  = find_min();
+        max_  = find_max(); 
+    }
+
+private:
     node_ptr recursive_copy(node_ptr other_node, node_ptr this_parent, node_ptr other_Null_) const
     {
         if (other_node == other_Null_)
@@ -87,7 +128,8 @@ private:
 
         return this_node;
     }
-
+*/
+private:
     void swap(SearchTree& other) noexcept
     {
         std::swap(Null_, other.Null_);
@@ -116,6 +158,30 @@ public:
         return *this;
     }
 
+    ~SearchTree()
+    {
+        node_ptr current = root_;
+
+        while (current != Null_)
+        {
+            if (current->left_ != Null_)
+                current = current->left_;
+            else if (current->right_ != Null_)
+                current = current->right_;
+            else
+            {
+                delete current->left_;
+                delete current->right_;
+
+                current->left_ =  Null_;
+                current->right_ = Null_;
+
+                current = current->parent_;
+            }
+        }
+        delete Null_;
+    }
+    
 private:
     /*\_________________________________________________
     |*                                                  |
