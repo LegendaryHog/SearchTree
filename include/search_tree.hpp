@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <stack>
 #include <set>
 #include <iterator>
 
@@ -34,12 +35,13 @@ class SearchTree
     using key_type  = KeyT;
     using size_type = std::size_t;
 
-    node_ptr root_ = nullptr;
-    node_ptr max_  = nullptr;
-    node_ptr min_  = nullptr;
+    node_ptr Null_ = new node_type{{}, Colors::Black}; // all of nullptr is replaced on null_, for minimalize checking
+
+    node_ptr root_ = Null_;
+    node_ptr max_  = Null_;
+    node_ptr min_  = Null_;
 
     size_type size_ = 0;
-    const node_ptr Null_ = new node_type{{}, Colors::Black}; // all of nullptr is replaced on null_, for minimalize checking
     Cmp cmp {};
 
 public:
@@ -48,6 +50,71 @@ public:
     SearchTree(const key_type& key)
     :root_ {new node_type{key, Colors::Black, Null_, Null_, Null_}}, max_ {root_}, min_ {root_}, size_ {1}
     {}
+
+    bool empty() const {return (size_ == 0);}
+
+    SearchTree(const SearchTree& other): size_ {other.size_}
+    {
+        root_ = recursive_copy(other.root_, Null_, other.Null_);
+        min_  = find_min();
+        max_  = find_max(); 
+    }
+
+private:
+    node_ptr find_min() const
+    {
+        node_ptr node = root_;
+        for (node = root_; node->left_ != Null_; node = node->left_) {}
+        return node;
+    }
+
+    node_ptr find_max() const
+    {
+        node_ptr node = root_;
+        for (node = root_; node->right_!= Null_; node = node->right_) {}
+        return node;
+    }
+
+    node_ptr recursive_copy(node_ptr other_node, node_ptr this_parent, node_ptr other_Null_) const
+    {
+        if (other_node == other_Null_)
+            return Null_;
+
+        node_ptr this_node = new node_type{other_node->key_, other_node->color_, this_parent};
+
+        this_node->left_  = recursive_copy(other_node->left_, this_node, other_Null_);
+        this_node->right_ = recursive_copy(other_node->right_, this_node, other_Null_);
+
+        return this_node;
+    }
+
+    void swap(SearchTree& other) noexcept
+    {
+        std::swap(Null_, other.Null_);
+        std::swap(root_, other.root_);
+        std::swap(min_, other.min_);
+        std::swap(max_, other.max_);
+        std::swap(size_, other.size_);
+    }
+
+public:
+    SearchTree(SearchTree&& other) noexcept
+    {
+        swap(other);
+    }
+
+    SearchTree& operator=(const SearchTree& rhs)
+    {
+        auto rhs_cpy {rhs};
+        swap(rhs);
+        return *this;
+    }
+
+    SearchTree& operator=(SearchTree&& rhs) noexcept
+    {
+        swap(rhs);
+        return *this;
+    }
 
 private:
     /*\_________________________________________________
@@ -103,7 +170,7 @@ private:
     |*    / \                                 / \       |
     |*   /   \                               /   \      |
     |* yl     yr                           yr      r    |
-    |*__________________________________________________|
+    |* _________________________________________________|
     \*/
     void right_rotate(node_ptr x_node)
     {
@@ -168,8 +235,6 @@ private:
     }
 
 public:
-    bool empty() const {return (size_ == 0);}
-
     std::pair<Iterator, bool> insert(const key_type& key)
     {
         // if tree is empty
@@ -209,7 +274,8 @@ public:
 
         // increament size
         size_++; 
-        // create new node with key equal to input key, with red color, with parent and without sons
+        // create new node with key equal to input key, with red color,
+        // with parent and without sons
         node_ptr z_node = new node_type{key, Colors::Red, y_node, Null_, Null_};
 
         // insert new node in right place
@@ -270,17 +336,17 @@ public:
                 {
                     // Case 2
                     /*\__________________________________________________
-                    |*                      ______
-                    |*       gr_par(Black) |rotate|       gr_par(Black)
-                    |*          /   \      | left |         /    \
-                    |*         /   delta   |around|        /    delta
-                    |*    par(Red)         |parent|     node(Red)   
-                    |*       / \         ----------->   /  \ 
-                    |*   alpha  \                      /    gamma
-                    |*         node(Red)            par(Red)
-                    |*          /  \                 /  \
-                    |*       beta  gamma          alpha beta
-                    |* ___________________________________________________
+                    |*                      ______                       |
+                    |*       gr_par(Black) |rotate|       gr_par(Black)  |
+                    |*          /   \      | left |         /    \       |
+                    |*         /   delta   |around|        /    delta    |
+                    |*    par(Red)         |parent|     node(Red)        |
+                    |*       / \         ----------->   /  \             |
+                    |*   alpha  \                      /    gamma        |
+                    |*         node(Red)            par(Red)             |
+                    |*          /  \                 /  \                |
+                    |*       beta  gamma          alpha beta             |
+                    |* __________________________________________________|
                     \*/
                     if (node == node->parent_->right_)
                     {
@@ -291,17 +357,17 @@ public:
                     }
                     // Case 3
                     /*\___________________________________________________________________
-                    |*                                 ______
-                    |*         gr_par(Black -> Red)   |rotate|         par(Black)        
-                    |*            /    \              |right |           /   \
-                    |*           /    delta           |around|          /     \
-                    |*       par(Red -> Black)        |gr_par|    node(Red)  gr_par(Red)  
-                    |*        /  \                  ------------>   /  \        /  \
-                    |*       /    gamma                          alpha beta  gamma delta
-                    |*   node(Red)
-                    |*     /  \
-                    |*  alpha beta
-                    |* ___________________________________________________________________
+                    |*                                 ______                             |
+                    |*         gr_par(Black -> Red)   |rotate|         par(Black)         |
+                    |*            /    \              |right |           /   \            |
+                    |*           /    delta           |around|          /     \           |
+                    |*       par(Red -> Black)        |gr_par|    node(Red)  gr_par(Red)  |
+                    |*        /  \                  ------------>   /  \        /  \      |
+                    |*       /    gamma                          alpha beta  gamma delta  |
+                    |*   node(Red)                                                        |
+                    |*     /  \                                                           |
+                    |*  alpha beta                                                        |
+                    |* ___________________________________________________________________|
                     \*/
                     node->parent_->color_          = Colors::Black;
                     node->parent_->parent_->color_ = Colors::Red;
