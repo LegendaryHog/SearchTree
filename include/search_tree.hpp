@@ -24,19 +24,38 @@ struct RBNode
     Colors  color_  = Colors::Red;
     RBNode* parent_ = nullptr, left_ = nullptr, right_ = nullptr;
 
-    bool is_left_son() const noexcept {return this == parent_->left_;}
+    bool is_left_son()  const noexcept {return this == parent_->left_;}
     bool is_right_son() const noexcept {return this == parent_->right_;}
 };
+
+// for sorted search tree
+template<typename KeyT>
+RBNode* find_min(const RBNode* root, const RBNode* Null)
+{
+    const RBNode<KeyT>* node = root;
+    for (node = root; node->left_ != Null; node = node->left_) {}
+    return node;
+}
+
+// for sorted search tree
+template<typename KeyT>
+RBNode<KeyT>* find_max(const RBNode<>* root, const RBNode<KeyT>* Null)
+{
+    const RBNode<KeyT>* node = root;
+    for (node = root; node->right_ != Null; node = node->right_) {}
+    return node;
+}
 
 } // namespace anonymous
 
 template<typename KeyT = int, class Cmp = std::less<KeyT>>  
 class SearchTree
 {
-    using node_type = RBNode<KeyT>;
-    using node_ptr  = node_type*
-    using key_type  = KeyT;
-    using size_type = std::size_t;
+    using node_type      = RBNode<KeyT>;
+    using node_ptr       = node_type*;
+    using const_node_ptr = const node_type*;
+    using key_type       = KeyT;
+    using size_type      = typename std::size_t;
 
     node_ptr Null_ = new node_type{{}, Colors::Black}; // all of nullptr is replaced on null_, for minimalize checking
 
@@ -55,21 +74,6 @@ public:
     {}
 
     bool empty() const {return (size_ == 0);}
-
-private:
-    node_ptr find_min() const
-    {
-        node_ptr node = root_;
-        for (node = root_; node->left_ != Null_; node = node->left_) {}
-        return node;
-    }
-
-    node_ptr find_max() const
-    {
-        node_ptr node = root_;
-        for (node = root_; node->right_!= Null_; node = node->right_) {}
-        return node;
-    }
 
 public:
     SearchTree(const SearchTree& other): size_ {other.size_}
@@ -102,8 +106,8 @@ public:
             }
         }
 
-        min_ = find_min();
-        max_ = find_max();
+        min_ = find_min(root_, Null_);
+        max_ = find_max(root_, Null_);
     }
 
 // recursive copy ctor
@@ -181,7 +185,7 @@ public:
         }
         delete Null_;
     }
-    
+
 private:
     /*\_________________________________________________
     |*                                                  |
@@ -255,7 +259,7 @@ private:
         else
             x_node->parent_->right_ = y_node;
 
-        y_node->right_ = x_node;
+        y_node->right_  = x_node;
         x_node->parent_ = y_node;
     }
 
@@ -269,10 +273,12 @@ public:
         using pointer           = key_type*;
         using reference         = key_type&;
     private:
-        node_type* node_;
+        node_ptr node_;
+        const_node_ptr Null_;
 
     public:
-        Iterator(node_key* node = nullptr): node_ {node}
+        Iterator(node_ptr node = nullptr, const_node_ptr Null = nullptr)
+        :node_ {node}, Null_ {Null}
         {}
 
         reference operator*() const
@@ -284,23 +290,170 @@ public:
         {
             return &(node_->key_);
         }
+
+        Iterator& operator++()
+        {
+            if (node_->right_ != Null_)
+                return find_min(node_->right_, Null_);
+
+            auto parent = node_->parent_;
+
+            while (parent != Null_ && node_->is_right_son())
+            {
+                node_ = parent;
+                parent = parent->parent_;
+            }
+            node_ = parent;
+            return *this;
+        }
+
+        Iterator operator++(int)
+        {
+            auto cpy {*this};
+            ++(*this);
+            return cpy;
+        }
+
+        Iterator& operator--()
+        {
+            if (node_->left_ != Null_)
+                return find_max(node_->left, Null_);
+
+            auto parent = node_->parent_;
+
+            while (parent != Null_ && node_->is_left_son())
+            {
+                node_ = parent;
+                parent = parent->parent_;
+            }
+            node_ = parent;
+            return *this;
+        }
+
+        Iterator& operator--(int)
+        {
+            auto cpy {*this};
+            --(*this);
+            return cpy;
+        }
+
+        bool operator==(const Iterator& rhs) const
+        {
+            return node_ == rhs.node_;
+        }
+        
+        bool operator!=(const Iterator& rhs) const
+        {
+            return !(*this == rhs);
+        }
     }; // class Iterator
 
     class ConstIterator
     {
+    public:
+        using iterator_category = typename std::bidirectional_iterator_tag;
+        using difference_type   = typename std::ptrdiff_t;
+        using value_type        = key_type;
+        using const_pointer     = const key_type*;
+        using const_reference   = const key_type&;
+    private:
+        const_node_ptr node_;
+        const_node_ptr Null_;
 
+    public:
+        ConstIterator(const_node_ptr node = nullptr, const_node_ptr Null = nullptr)
+        :node_ {node}, Null_ {Null}
+        {}
+
+        const_reference operator*() const
+        {
+            return node_->key_;
+        }
+
+        const_pointer operator->() const
+        {
+            return &(node_->key_);
+        }
+
+        ConstIterator& operator++()
+        {
+            if (node_->right_ != Null_)
+                return find_min(node_->right_, Null_);
+
+            auto parent = node_->parent_;
+
+            while (parent != Null_ && node_->is_right_son())
+            {
+                node_ = parent;
+                parent = parent->parent_;
+            }
+            node_ = parent;
+            return *this;
+        }
+
+        ConstIterator operator++(int)
+        {
+            auto cpy {*this};
+            ++(*this);
+            return cpy;
+        }
+
+        ConstIterator& operator--()
+        {
+            if (node_->left_ != Null_)
+                return find_max(node_->left, Null_);
+
+            auto parent = node_->parent_;
+
+            while (parent != Null_ && node_->is_left_son())
+            {
+                node_ = parent;
+                parent = parent->parent_;
+            }
+            node_ = parent;
+            return *this;
+        }
+
+        ConstIterator& operator--(int)
+        {
+            auto cpy {*this};
+            --(*this);
+            return cpy;
+        }
+
+        bool operator==(const ConstIterator& rhs) const
+        {
+            return node_ == rhs.node_;
+        }
+        
+        bool operator!=(const ConstIterator& rhs) const
+        {
+            return !(*this == rhs);
+        }
     }; // class ConstIterator
 
-private:
-    void fix_min_max(node_ptr node)
-    {
-        if (cmp(max_->key_, node->key_))
-            max_ = node;
-        if (cmp(node->key_, min_->key))
-            min_ = node;
-    }
+    Iterator begin() & {return Iterator{min_};}
+    Iterator end()   & {return Iterator{Null_};}
+
+    ConstIterator begin() const& {return ConstIterator{min_};}
+    ConstIterator end()   const& {return ConstIterator{Null_};}
+
+    ConstIterator cbegin() const& {return ConstIterator{min_};}
+    ConstIterator cend()   const& {return ConstIterator{Null_};}
 
 public:
+    Iterator find(const key_type& key)
+    {
+        node_ptr node = root_;
+        while (node != Null_)
+            if (cmp(key, node->key_))
+                node = node->left_;
+            else if (cmp(node->key_, key))
+                node = node->right_;
+            else
+                return Iterator{node};
+    }
+
     std::pair<Iterator, bool> insert(const key_type& key)
     {
         // if tree is empty
@@ -357,6 +510,16 @@ public:
         // return pair with iterator on new node and true
         return std::pair{Iterator{z_node}, true};
     }
+
+private:
+    void fix_min_max(node_ptr node)
+    {
+        if (cmp(max_->key_, node->key_))
+            max_ = node;
+        if (cmp(node->key_, min_->key))
+            min_ = node;
+    }
+
 
     void rb_insert_fix(node_ptr node)
     {
