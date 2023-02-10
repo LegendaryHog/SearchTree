@@ -3,6 +3,8 @@
 #include <stack>
 #include <set>
 #include <iterator>
+#include <fstream>
+#include <string>
 
 namespace Container
 {
@@ -19,10 +21,11 @@ template<typename KeyT = int>
 struct RBNode
 {
     using key_type = KeyT;
+    using node_ptr = RBNode*;   
 
     key_type  key_ {};
     Colors  color_  = Colors::Red;
-    RBNode* parent_ = nullptr, left_ = nullptr, right_ = nullptr;
+    node_ptr parent_ = nullptr, left_ = nullptr, right_ = nullptr;
 
     bool is_left_son()  const noexcept {return this == parent_->left_;}
     bool is_right_son() const noexcept {return this == parent_->right_;}
@@ -30,18 +33,18 @@ struct RBNode
 
 // for sorted search tree
 template<typename KeyT>
-RBNode* find_min(const RBNode* root, const RBNode* Null)
+RBNode<KeyT>* find_min(RBNode<KeyT>* root, const RBNode<KeyT>* Null)
 {
-    const RBNode<KeyT>* node = root;
+    RBNode<KeyT>* node = root;
     for (node = root; node->left_ != Null; node = node->left_) {}
     return node;
 }
 
 // for sorted search tree
 template<typename KeyT>
-RBNode<KeyT>* find_max(const RBNode<>* root, const RBNode<KeyT>* Null)
+RBNode<KeyT>* find_max(RBNode<KeyT>* root, const RBNode<KeyT>* Null)
 {
-    const RBNode<KeyT>* node = root;
+    RBNode<KeyT>* node = root;
     for (node = root; node->right_ != Null; node = node->right_) {}
     return node;
 }
@@ -57,7 +60,15 @@ class SearchTree
     using key_type       = KeyT;
     using size_type      = typename std::size_t;
 
-    node_ptr Null_ = new node_type{{}, Colors::Black}; // all of nullptr is replaced on null_, for minimalize checking
+    node_ptr null_init() const
+    {
+        node_ptr Null = new node_type{{}, Colors::Black};
+        Null->left_  = Null;
+        Null->right_ = Null;
+        return Null;
+    }
+
+    node_ptr Null_ = null_init(); // all of nullptr is replaced on null_, for minimalize checking
 
     node_ptr root_ = Null_;
     node_ptr max_  = Null_;
@@ -69,21 +80,29 @@ class SearchTree
 public:
     SearchTree() = default;
 
+private:
+    void put_min_max_in_null()
+    {
+        Null_->left_  = min_;
+        Null_->right_ = max_;
+    }
+public:
     SearchTree(const key_type& key)
     :root_ {new node_type{key, Colors::Black, Null_, Null_, Null_}}, max_ {root_}, min_ {root_}, size_ {1}
-    {}
+    {
+        put_min_max_in_null();
+    }
 
     bool empty() const {return (size_ == 0);}
 
-public:
     SearchTree(const SearchTree& other): size_ {other.size_}
     {
         if (empty())
             return;
 
         root_ = new node_type{other.root_->key_, other.root_->color_, Null_, Null_, Null_};
-        node_ptr this_current = root_;
-        node_ptr other_current = other.root_;
+        auto this_current = root_;
+        auto other_current = other.root_;
 
         while (other_current != other.Null_)
         {
@@ -108,6 +127,7 @@ public:
 
         min_ = find_min(root_, Null_);
         max_ = find_max(root_, Null_);
+        put_min_max_in_null();
     }
 
 // recursive copy ctor
@@ -174,13 +194,24 @@ public:
                 current = current->right_;
             else
             {
-                delete current->left_;
-                delete current->right_;
-
-                current->left_ =  Null_;
-                current->right_ = Null_;
-
-                current = current->parent_;
+                if (current->parent_ == Null_)
+                {
+                    delete root_;
+                    break;
+                }
+                if (current->is_left_son())
+                {
+                    current = current->parent_;
+                    delete current->left_;
+                    current->left_ = Null_;
+                }
+                else
+                {
+                    current = current->parent_;
+                    delete current->right_;
+                    current->right_ = Null_;
+                }
+                size_--;
             }
         }
         delete Null_;
@@ -207,7 +238,7 @@ private:
 
         // if yl exist (not nullptr)
         // replace parent of yl from y to x
-        if (y_node->left != Null_)      
+        if (y_node->left_ != Null_)      
             y_node->left_->parent_ = x_node;
 
         // parent of y will be parent of x
@@ -219,7 +250,7 @@ private:
         // if x were left son of parent,
         // then y is new left son
         else if (x_node == x_node->parent_->left_)
-            x_node->parent_->left = y_node;
+            x_node->parent_->left_ = y_node;
         // else x were right son of parent,
         // then y is new right son
         else
@@ -245,12 +276,12 @@ private:
     void right_rotate(node_ptr x_node)
     {
         node_ptr y_node = x_node->left_;
-        x_node->left = y_node->right_;
+        x_node->left_ = y_node->right_;
 
-        if (y_node->right != Null_)
+        if (y_node->right_ != Null_)
             y_node->right_->parent_ = x_node;
 
-        y_node->parent = x_node->parent_;
+        y_node->parent_ = x_node->parent_;
         
         if (x_node == root_)
             root_ = y_node;
@@ -294,16 +325,18 @@ public:
         Iterator& operator++()
         {
             if (node_->right_ != Null_)
-                return find_min(node_->right_, Null_);
-
-            auto parent = node_->parent_;
-
-            while (parent != Null_ && node_->is_right_son())
+                node_ = find_min(node_->right_, Null_);
+            else
             {
+                auto parent = node_->parent_;
+
+                while (parent != Null_ && node_->is_right_son())
+                {
+                    node_ = parent;
+                    parent = parent->parent_;
+                }
                 node_ = parent;
-                parent = parent->parent_;
             }
-            node_ = parent;
             return *this;
         }
 
@@ -316,17 +349,21 @@ public:
 
         Iterator& operator--()
         {
-            if (node_->left_ != Null_)
-                return find_max(node_->left, Null_);
+            if (node_ == Null_)
+                node_ = Null_->right_;
+            else if (node_->left_ != Null_)
+                node_ = find_max(node_->left, Null_);
+            else
+            {    
+                auto parent = node_->parent_;
 
-            auto parent = node_->parent_;
-
-            while (parent != Null_ && node_->is_left_son())
-            {
+                while (parent != Null_ && node_->is_left_son())
+                {
+                    node_ = parent;
+                    parent = parent->parent_;
+                }
                 node_ = parent;
-                parent = parent->parent_;
             }
-            node_ = parent;
             return *this;
         }
 
@@ -346,6 +383,8 @@ public:
         {
             return !(*this == rhs);
         }
+
+        node_ptr get() const {return node_;}
     }; // class Iterator
 
     class ConstIterator
@@ -357,11 +396,11 @@ public:
         using const_pointer     = const key_type*;
         using const_reference   = const key_type&;
     private:
-        const_node_ptr node_;
+        node_ptr node_;
         const_node_ptr Null_;
 
     public:
-        ConstIterator(const_node_ptr node = nullptr, const_node_ptr Null = nullptr)
+        ConstIterator(node_ptr node = nullptr, const_node_ptr Null = nullptr)
         :node_ {node}, Null_ {Null}
         {}
 
@@ -378,16 +417,18 @@ public:
         ConstIterator& operator++()
         {
             if (node_->right_ != Null_)
-                return find_min(node_->right_, Null_);
-
-            auto parent = node_->parent_;
-
-            while (parent != Null_ && node_->is_right_son())
+                node_ = find_min(node_->right_, Null_);
+            else
             {
+                auto parent = node_->parent_;
+
+                while (parent != Null_ && node_->is_right_son())
+                {
+                    node_ = parent;
+                    parent = parent->parent_;
+                }
                 node_ = parent;
-                parent = parent->parent_;
             }
-            node_ = parent;
             return *this;
         }
 
@@ -400,17 +441,21 @@ public:
 
         ConstIterator& operator--()
         {
-            if (node_->left_ != Null_)
-                return find_max(node_->left, Null_);
+            if (node_ == Null_)
+                node_ = Null_->right_;
+            else if (node_->left_ != Null_)
+                node_ = find_max(node_->left, Null_);
+            else
+            {    
+                auto parent = node_->parent_;
 
-            auto parent = node_->parent_;
-
-            while (parent != Null_ && node_->is_left_son())
-            {
+                while (parent != Null_ && node_->is_left_son())
+                {
+                    node_ = parent;
+                    parent = parent->parent_;
+                }
                 node_ = parent;
-                parent = parent->parent_;
             }
-            node_ = parent;
             return *this;
         }
 
@@ -430,16 +475,18 @@ public:
         {
             return !(*this == rhs);
         }
+
+        node_ptr get() const {return node_;}
     }; // class ConstIterator
 
-    Iterator begin() & {return Iterator{min_};}
+    Iterator begin() & {return Iterator{min_, Null_};}
     Iterator end()   & {return Iterator{Null_};}
 
-    ConstIterator begin() const& {return ConstIterator{min_};}
-    ConstIterator end()   const& {return ConstIterator{Null_};}
+    ConstIterator begin() const& {return ConstIterator{min_, Null_};}
+    ConstIterator end()   const& {return ConstIterator{Null_, Null_};}
 
-    ConstIterator cbegin() const& {return ConstIterator{min_};}
-    ConstIterator cend()   const& {return ConstIterator{Null_};}
+    ConstIterator cbegin() const& {return ConstIterator{min_, Null_};}
+    ConstIterator cend()   const& {return ConstIterator{Null_, Null_};}
 
 public:
     Iterator find(const key_type& key)
@@ -451,7 +498,7 @@ public:
             else if (cmp(node->key_, key))
                 node = node->right_;
             else
-                return Iterator{node};
+                return Iterator{node, Null_};
     }
 
     std::pair<Iterator, bool> insert(const key_type& key)
@@ -466,8 +513,9 @@ public:
             // upadte min and max
             min_ = root_;
             max_ = root_;
+            put_min_max_in_null();
             // return pair with itr on root and true
-            return std::pair{Iterator{root_}, true};
+            return std::pair{Iterator{root_, Null_}, true};
         }
         // declare two nodes
         node_ptr x_node = root_;
@@ -480,7 +528,7 @@ public:
             // save pointer on x before turn
             y_node = x_node;
             // if key less x.key turn left
-            if (cmp(key, x_node->key))
+            if (cmp(key, x_node->key_))
                 x_node = x_node->left_;
             // else turn right
             else
@@ -489,7 +537,7 @@ public:
 
         // if this key already in tree, then return default iterator and false
         if (cmp(y_node->key_, key) == cmp(key, y_node->key_))
-            return std::pair{Iterator{}, false};
+            return std::pair{end(), false};
 
         // increament size
         size_++; 
@@ -508,7 +556,7 @@ public:
         // fix red-black properties
         rb_insert_fix(z_node);
         // return pair with iterator on new node and true
-        return std::pair{Iterator{z_node}, true};
+        return std::pair{Iterator{z_node, Null_}, true};
     }
 
 private:
@@ -516,8 +564,9 @@ private:
     {
         if (cmp(max_->key_, node->key_))
             max_ = node;
-        if (cmp(node->key_, min_->key))
+        if (cmp(node->key_, min_->key_))
             min_ = node;
+        put_min_max_in_null();
     }
 
 
@@ -627,12 +676,77 @@ private:
                     }
                     node->parent_->color_ = Colors::Black;
                     node->parent_->parent_->color_ = Colors::Red;
-                    left_rotate(node->parent_->parent);
+                    left_rotate(node->parent_->parent_);
                 }
             }
         // fix invariont that is "root is black"
         root_->color_ = Colors::Black;
     }
+
+#ifdef DEBUG
+public:  
+    void debug_graph_dump(const std::string& filename) const
+    {   
+        std::fstream file {filename + ".dot", std::ofstream::out | std::ofstream::trunc};
+
+        file << "digraph G {" << std::endl;
+        file << "\trankdir=\"TB\"" << std::endl;
+        file << "\tnode[shape=record, penwidth=3.0, style=filled, color=black];" << std::endl;
+        descriptor_dump(file);
+        tree_dump(file);
+        file << "}" << std::endl;
+        file.close();
+
+        std::system(("dot -T svg " + filename + ".dot -o " + filename + ".svg").c_str());
+        std::system(("rm " + filename + ".dot").c_str());
+    }
+
+private:
+    void descriptor_dump(std::fstream& file) const
+    {
+        file << "\tTree [fillcolor=deeppink,label = \"{ size: " << size_ << "| <_root_> root: " << root_
+        << "| <_min_> min: " << min_  << " min key: " << min_->key_
+        << "| max: " << max_ << " max key: " << max_->key_ <<
+        "| Null: " << Null_ << "}\"];" << std::endl;
+    }
+
+    void null_dump(std::fstream& file) const
+    {
+        file << "Null_" << "[fillcolor=cyan, label = \"{Null node | <_node_>ptr: " << Null_ << "| {<left>min: " << Null_->left_ <<
+        "| <right>max: " << Null_->right_ << "}}\"];" << std::endl;
+    }
+
+    void tree_dump(std::fstream& file) const
+    {
+        if (empty())
+            return;
+
+        null_dump(file);
+
+        for (auto itr = cbegin(), end = cend(); itr != end; ++itr)
+        {
+            node_ptr node = itr.get();
+            file << "Node_" << node << "[fillcolor=";
+            if (node->color_ == Colors::Red)    
+                file << "red";
+            else
+                file << "green";
+            
+            file << ", label = \"{<_node_>ptr: " << node << "| parent: " << node->parent_ << "| key: " << node->key_
+                << "| {<left>left: " << node->left_ << "| <right>right: " << node->right_ << "}}\"];" << std::endl;
+        }
+
+        file << "edge[penwidth=2, color=black];" << std::endl;
+        for (auto itr = cbegin(), end = cend(); itr != end; ++itr)
+        {
+            node_ptr node = itr.get();
+            if (node->left_ != Null_)
+                file << "Node_" << node << ":left:s -> Node_" << node->left_ << ":_node_:n;" << std::endl;
+            if (node->right_ != Null_)
+                file << "Node_" << node << ":right:s -> Node_" << node->right_ << ":_node_:n;" << std::endl;
+        }
+    }
+#endif
 }; // class SearchTree
 
 } // namespace Container

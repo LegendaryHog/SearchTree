@@ -1,4 +1,9 @@
 build/
+logs/
 *.txt
 *.o
 *.out
+*.png
+*.dot
+*.svg
+
