@@ -21,11 +21,11 @@ template<typename KeyT = int>
 struct RBNode
 {
     using key_type = KeyT;
-    using node_ptr = RBNode*;   
+    using rbnode_ptr = RBNode*;   
 
     key_type  key_ {};
     Colors  color_  = Colors::Red;
-    node_ptr parent_ = nullptr, left_ = nullptr, right_ = nullptr;
+    rbnode_ptr parent_ = nullptr, left_ = nullptr, right_ = nullptr;
 
     bool is_left_son()  const noexcept {return this == parent_->left_;}
     bool is_right_son() const noexcept {return this == parent_->right_;}
@@ -77,24 +77,45 @@ class SearchTree
     size_type size_ = 0;
     Cmp cmp {};
 
-public:
-    SearchTree() = default;
-
+// sub func
 private:
     void put_min_max_in_null()
     {
         Null_->left_  = min_;
         Null_->right_ = max_;
     }
+
+//----------------------------------------=| Ctors start |=---------------------------------------------
 public:
+    SearchTree() = default;
+
     SearchTree(const key_type& key)
     :root_ {new node_type{key, Colors::Black, Null_, Null_, Null_}}, max_ {root_}, min_ {root_}, size_ {1}
     {
         put_min_max_in_null();
     }
 
-    bool empty() const {return (size_ == 0);}
+    SearchTree(std::initializer_list<key_type> list)
+    {
+        for (auto x: list)
+            insert(x);
+    }
 
+    template<std::input_iterator It>
+    SearchTree(It begin, It end)
+    {   
+        for (auto itr = begin; itr != end; ++itr)
+            insert(*itr);
+    }
+//----------------------------------------=| Ctors end |=-----------------------------------------------
+
+//----------------------------------------=| Size`s funcs start |=--------------------------------------
+    size_type size() const {return size_;}
+
+    bool empty() const {return (size_ == 0);}
+//----------------------------------------=| Size`s funcs end |=----------------------------------------
+
+//----------------------------------------=| Big five start |=------------------------------------------
     SearchTree(const SearchTree& other): size_ {other.size_}
     {
         if (empty())
@@ -216,7 +237,9 @@ public:
         }
         delete Null_;
     }
+//----------------------------------------=| Big five end |=--------------------------------------------
 
+//----------------------------------------=| Algorithm funcs start |=-----------------------------------
 private:
     /*\_________________________________________________
     |*                                                  |
@@ -293,7 +316,9 @@ private:
         y_node->right_  = x_node;
         x_node->parent_ = y_node;
     }
+//----------------------------------------=| Algorithm funcs end |=-------------------------------------
 
+//----------------------------------------=| Iterators start |=-----------------------------------------
 public:
     class Iterator
     {
@@ -367,7 +392,7 @@ public:
             return *this;
         }
 
-        Iterator& operator--(int)
+        Iterator operator--(int)
         {
             auto cpy {*this};
             --(*this);
@@ -459,7 +484,7 @@ public:
             return *this;
         }
 
-        ConstIterator& operator--(int)
+        ConstIterator operator--(int)
         {
             auto cpy {*this};
             --(*this);
@@ -488,6 +513,9 @@ public:
     ConstIterator cbegin() const& {return ConstIterator{min_, Null_};}
     ConstIterator cend()   const& {return ConstIterator{Null_, Null_};}
 
+//----------------------------------------=| Iterators end |=-------------------------------------------
+
+//----------------------------------------=| Methods start |=-------------------------------------------
 public:
     Iterator find(const key_type& key)
     {
@@ -558,7 +586,9 @@ public:
         // return pair with iterator on new node and true
         return std::pair{Iterator{z_node, Null_}, true};
     }
+//----------------------------------------=| Methods end |=---------------------------------------------
 
+//----------------------------------------=| Fix funcs start |=-----------------------------------------
 private:
     void fix_min_max(node_ptr node)
     {
@@ -682,7 +712,9 @@ private:
         // fix invariont that is "root is black"
         root_->color_ = Colors::Black;
     }
+//----------------------------------------=| Fix funcs end |=-------------------------------------------
 
+//----------------------------------------=| Graph dump start |=----------------------------------------
 #ifdef DEBUG
 public:  
     void debug_graph_dump(const std::string& filename) const
@@ -691,7 +723,7 @@ public:
 
         file << "digraph G {" << std::endl;
         file << "\trankdir=\"TB\"" << std::endl;
-        file << "\tnode[shape=record, penwidth=3.0, style=filled, color=black];" << std::endl;
+        file << "\tnode[shape=record, penwidth=3.0, style=filled, color=black, fontcolor=white];" << std::endl;
         descriptor_dump(file);
         tree_dump(file);
         file << "}" << std::endl;
@@ -704,16 +736,16 @@ public:
 private:
     void descriptor_dump(std::fstream& file) const
     {
-        file << "\tTree [fillcolor=deeppink,label = \"{ size: " << size_ << "| <_root_> root: " << root_
-        << "| <_min_> min: " << min_  << " min key: " << min_->key_
-        << "| max: " << max_ << " max key: " << max_->key_ <<
-        "| Null: " << Null_ << "}\"];" << std::endl;
+        file << "\tTree [fillcolor=purple, label = \"{ size: " << size_ << "| <root> root:\\n " << root_
+        << "| min:\\n " << min_  << "\\n min key: " << min_->key_
+        << "| max:\\n " << max_ << "\\n max key: " << max_->key_ <<
+        "| <null> Null:\\n " << Null_ << "}\"];" << std::endl;
     }
 
     void null_dump(std::fstream& file) const
     {
-        file << "Null_" << "[fillcolor=cyan, label = \"{Null node | <_node_>ptr: " << Null_ << "| {<left>min: " << Null_->left_ <<
-        "| <right>max: " << Null_->right_ << "}}\"];" << std::endl;
+        file << "Null_" << "[fillcolor=navy, label = \"{Null node | ptr:\\n " << Null_ << "| {min:\\n " << Null_->left_ <<
+        "| max:\\n " << Null_->right_ << "}}\"];" << std::endl;
     }
 
     void tree_dump(std::fstream& file) const
@@ -728,15 +760,15 @@ private:
             node_ptr node = itr.get();
             file << "Node_" << node << "[fillcolor=";
             if (node->color_ == Colors::Red)    
-                file << "red";
+                file << "red, fontcolor=black";
             else
-                file << "green";
+                file << "black, color=red";
             
-            file << ", label = \"{<_node_>ptr: " << node << "| parent: " << node->parent_ << "| key: " << node->key_
-                << "| {<left>left: " << node->left_ << "| <right>right: " << node->right_ << "}}\"];" << std::endl;
+            file << ", label = \"{<_node_>ptr:\\n " << node << "| parent:\\n " << node->parent_ << "| key: " << node->key_
+                << "| {<left>left:\\n " << node->left_ << "| <right>right:\\n " << node->right_ << "}}\"];" << std::endl;
         }
 
-        file << "edge[penwidth=2, color=black];" << std::endl;
+        file << "edge[penwidth=3, color=black];" << std::endl;
         for (auto itr = cbegin(), end = cend(); itr != end; ++itr)
         {
             node_ptr node = itr.get();
@@ -745,8 +777,12 @@ private:
             if (node->right_ != Null_)
                 file << "Node_" << node << ":right:s -> Node_" << node->right_ << ":_node_:n;" << std::endl;
         }
+
+        file << "Tree:root:e -> Node_" << root_ << ":_node_:n;" << std::endl;
+        file << "Tree:null:w -> Null_:n;" << std::endl;
     }
 #endif
+//----------------------------------------=| Graph dump end |=------------------------------------------
 }; // class SearchTree
 
 } // namespace Container
