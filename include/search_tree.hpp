@@ -252,37 +252,37 @@ private:
     |*       yl     yr                l     yl          |
     |*__________________________________________________|
     \*/
-    void left_rotate(node_ptr x_node)
+    void left_rotate(node_ptr x)
     {
         // declare y as right son of x
-        node_ptr y_node = x_node->right_;
+        node_ptr y = x->right_;
         // new right son of x is yl 
-        x_node->right_ = y_node->left_;
+        x->right_ = y->left_;
 
         // if yl exist (not nullptr)
         // replace parent of yl from y to x
-        if (y_node->left_ != Null_)      
-            y_node->left_->parent_ = x_node;
+        if (y->left_ != Null_)      
+            y->left_->parent_ = x;
 
         // parent of y will be parent of x
-        y_node->parent_ = x_node->parent_;
+        y->parent_ = x->parent_;
 
         // if x were root,then y is new root
-        if (x_node == root_)
-            root_ = y_node;
+        if (x == root_)
+            root_ = y;
         // if x were left son of parent,
         // then y is new left son
-        else if (x_node == x_node->parent_->left_)
-            x_node->parent_->left_ = y_node;
+        else if (x == x->parent_->left_)
+            x->parent_->left_ = y;
         // else x were right son of parent,
         // then y is new right son
         else
-            x_node->parent_->right_ = y_node;
+            x->parent_->right_ = y;
 
         // x is y left son now
-        y_node->left_ = x_node;
+        y->left_ = x;
         // parent of x is y now
-        x_node->parent_ = y_node;
+        x->parent_ = y;
     }
 
     /*\_________________________________________________
@@ -296,25 +296,25 @@ private:
     |* yl     yr                           yr      r    |
     |* _________________________________________________|
     \*/
-    void right_rotate(node_ptr x_node)
+    void right_rotate(node_ptr x)
     {
-        node_ptr y_node = x_node->left_;
-        x_node->left_ = y_node->right_;
+        node_ptr y = x->left_;
+        x->left_ = y->right_;
 
-        if (y_node->right_ != Null_)
-            y_node->right_->parent_ = x_node;
+        if (y->right_ != Null_)
+            y->right_->parent_ = x;
 
-        y_node->parent_ = x_node->parent_;
+        y->parent_ = x->parent_;
         
-        if (x_node == root_)
-            root_ = y_node;
-        else if (x_node == x_node->parent_->left_)
-            x_node->parent_->left_  = y_node;
+        if (x == root_)
+            root_ = y;
+        else if (x == x->parent_->left_)
+            x->parent_->left_  = y;
         else
-            x_node->parent_->right_ = y_node;
+            x->parent_->right_ = y;
 
-        y_node->right_  = x_node;
-        x_node->parent_ = y_node;
+        y->right_  = x;
+        x->parent_ = y;
     }
 //----------------------------------------=| Algorithm funcs end |=-------------------------------------
 
@@ -515,7 +515,7 @@ public:
 
 //----------------------------------------=| Iterators end |=-------------------------------------------
 
-//----------------------------------------=| Methods start |=-------------------------------------------
+//----------------------------------------=| Find start |=----------------------------------------------
 public:
     Iterator find(const key_type& key)
     {
@@ -528,7 +528,9 @@ public:
             else
                 return Iterator{node, Null_};
     }
+//----------------------------------------=| Find end |=------------------------------------------------
 
+//----------------------------------------=| Insert end |=----------------------------------------------
     std::pair<Iterator, bool> insert(const key_type& key)
     {
         // if tree is empty
@@ -546,49 +548,47 @@ public:
             return std::pair{Iterator{root_, Null_}, true};
         }
         // declare two nodes
-        node_ptr x_node = root_;
-        node_ptr y_node = Null_;
+        node_ptr x = root_;
+        node_ptr y = Null_;
         
         // search place to insert
         // y will be parent
-        while (x_node != Null_)
+        while (x != Null_)
         {
             // save pointer on x before turn
-            y_node = x_node;
+            y = x;
             // if key less x.key turn left
-            if (cmp(key, x_node->key_))
-                x_node = x_node->left_;
+            if (cmp(key, x->key_))
+                x = x->left_;
             // else turn right
             else
-                x_node = x_node->right_;
+                x = x->right_;
         }
 
         // if this key already in tree, then return default iterator and false
-        if (cmp(y_node->key_, key) == cmp(key, y_node->key_))
+        if (cmp(y->key_, key) == cmp(key, y->key_))
             return std::pair{end(), false};
 
         // increament size
         size_++; 
         // create new node with key equal to input key, with red color,
         // with parent and without sons
-        node_ptr z_node = new node_type{key, Colors::Red, y_node, Null_, Null_};
+        node_ptr z = new node_type{key, Colors::Red, y, Null_, Null_};
 
         // insert new node in right place
-        if (cmp(z_node->key_, y_node->key_))
-            y_node->left_ = z_node;
+        if (cmp(z->key_, y->key_))
+            y->left_ = z;
         else
-            y_node->right_ = z_node;
+            y->right_ = z;
 
         // fix min and max pointers
-        fix_min_max(z_node);
+        fix_min_max(z);
         // fix red-black properties
-        rb_insert_fix(z_node);
+        rb_insert_fix(z);
         // return pair with iterator on new node and true
-        return std::pair{Iterator{z_node, Null_}, true};
+        return std::pair{Iterator{z, Null_}, true};
     }
-//----------------------------------------=| Methods end |=---------------------------------------------
 
-//----------------------------------------=| Fix funcs start |=-----------------------------------------
 private:
     void fix_min_max(node_ptr node)
     {
@@ -712,7 +712,124 @@ private:
         // fix invariont that is "root is black"
         root_->color_ = Colors::Black;
     }
-//----------------------------------------=| Fix funcs end |=-------------------------------------------
+//----------------------------------------=| Insert end |=----------------------------------------------
+
+//----------------------------------------=| Erase start |=---------------------------------------------
+public:
+    // replace subtree with root u with subtree with root v
+    void transplant(node_ptr u, node_ptr v)
+    {
+        if (u == root_)
+            root_ = v;
+        else if (u->is_left_son())
+            u->parent_->left_ = v;
+        else
+            u->parent_->right_ = v;
+        u->parent_ = v->parent_;
+    }
+
+    // delete z from tree with saving all invariants
+    void erase_by_ptr(node_ptr z)
+    {
+        // declare two pointer, y - replacment for z in else case
+        // x - root of subtree, where we need fix invarinats 
+        node_ptr y = z, x = Null_;
+        auto y_original_color = y->color_;
+        // if z has only right subtree
+        /*\_____________________________
+        |*     |                  |     |
+        |*     |                  |     |
+        |*     z    --------->    zr    |
+        |*      \                /  \   |
+        |*       \                      |
+        |*        zr                    |
+        |*       /  \                   |
+        |* _____________________________|
+        \*/
+        if (z->left_ == Null_)
+        {
+            // save root os subtree that will be replace
+            x = z->right_;
+            // replace right subtree of z with z
+            transplant(z, z->right_);
+        }
+        // if z has only left subtree
+        /*\_____________________________
+        |*     |                  |     |
+        |*     |                  |     |
+        |*     z    --------->    zl    |
+        |*    /                  /  \   |
+        |*   /                          |
+        |*  zl                          |
+        |* /  \                         |
+        |* _____________________________|
+        \*/
+        else if (z->right_ == Null_)
+        {
+            x = z->left_;
+            transplant(z, z->left_);
+        }
+        /*\____________________________________________________
+        |*      z                z                     y       |
+        |*     / \              /                     / \      | 
+        |*    /   \            /    y                /   \     |
+        |*   zl   zr          zl     \              zl   zr    |
+        |*  / \   / \        /  \     \                  / \   |
+        |*       ~       1             zr      2        ~      |
+        |*      /      ---->          /  \   ---->     /       |
+        |*     y                     /                yr       | 
+        |*      \                   yr               /  \      |
+        |*       \                 /  \                        |
+        |*        yr                                           |
+        |*       /  \                                          | 
+        |* ____________________________________________________|
+        \*/
+        else
+        {
+            // find y in right subtree of x
+            // y most left of z->right than y->left_ == Null_
+            y = find_min(z->right_);
+            // save original color of y node
+            // (look at the end of method to see cause)
+            y_original_color = y->color_;
+            // save root of subtree that we maybe need to fix
+            x = y->right_;
+            
+            //first arrow on picture
+            // if y right son of z
+            if (y->parent_ == z)
+                // only set parent of x as y
+                x->parent_ = y;
+            else
+            {
+
+                // replace y with right subtree of y
+                // after this x->parent_ will have correct value
+                transplant(y, y->right_);
+                // connect right son of z and y
+                y->right_ = z->right_;
+                y->right_->parent_ = y;
+            }
+            //second arrow on picture
+            // replace z with y
+            transplant(z, y);
+            // connect left son of z with y
+            y->left_ = z->left_;
+            y->left_->parent_ = y;
+            // to save invariant everywhere except in subtree with root x
+            y->color_ = z->color_;
+        }
+
+        // clear memory allocated on z node
+        delete z;
+
+        // in first two cases ("if" and "else if")
+        // if z had the Red color, then we cant broke any invarinats
+        // in third case, if y was Red we cant broke any invarints too
+        if (y_original_color == Colors::Black)
+            rb_delete_fixup(x);
+    }
+//----------------------------------------=| Erase end |=-----------------------------------------------
 
 //----------------------------------------=| Graph dump start |=----------------------------------------
 #ifdef DEBUG
@@ -736,7 +853,7 @@ public:
 private:
     void descriptor_dump(std::fstream& file) const
     {
-        file << "\tTree [fillcolor=purple, label = \"{ size: " << size_ << "| <root> root:\\n " << root_
+        file << "\tTree [fillcolor=purple, label = \"{ SearchTree\\ndescriptor| size: " << size_ << "| <root> root:\\n " << root_
         << "| min:\\n " << min_  << "\\n min key: " << min_->key_
         << "| max:\\n " << max_ << "\\n max key: " << max_->key_ <<
         "| <null> Null:\\n " << Null_ << "}\"];" << std::endl;
