@@ -9,7 +9,7 @@
 namespace Container
 {
 
-namespace 
+namespace detail
 {
 enum class Colors
 {
@@ -24,7 +24,7 @@ struct RBNode
     using rbnode_ptr = RBNode*;   
 
     key_type  key_ {};
-    Colors  color_  = Colors::Red;
+    detail::Colors  color_  = detail::Colors::Red;
     rbnode_ptr parent_ = nullptr, left_ = nullptr, right_ = nullptr;
 
     bool is_left_son()  const noexcept {return this == parent_->left_;}
@@ -49,12 +49,12 @@ RBNode<KeyT>* find_max(RBNode<KeyT>* root, const RBNode<KeyT>* Null)
     return node;
 }
 
-} // namespace anonymous
+} // namespace detail
 
 template<typename KeyT = int, class Cmp = std::less<KeyT>>  
 class SearchTree
 {
-    using node_type      = RBNode<KeyT>;
+    using node_type      = detail::RBNode<KeyT>;
     using node_ptr       = node_type*;
     using const_node_ptr = const node_type*;
     using key_type       = KeyT;
@@ -62,7 +62,7 @@ class SearchTree
 
     node_ptr null_init() const
     {
-        node_ptr Null = new node_type{{}, Colors::Black};
+        node_ptr Null = new node_type{{}, detail::Colors::Black};
         Null->left_  = Null;
         Null->right_ = Null;
         return Null;
@@ -90,7 +90,7 @@ public:
     SearchTree() = default;
 
     SearchTree(const key_type& key)
-    :root_ {new node_type{key, Colors::Black, Null_, Null_, Null_}}, max_ {root_}, min_ {root_}, size_ {1}
+    :root_ {new node_type{key, detail::Colors::Black, Null_, Null_, Null_}}, max_ {root_}, min_ {root_}, size_ {1}
     {
         put_min_max_in_null();
     }
@@ -146,8 +146,8 @@ public:
             }
         }
 
-        min_ = find_min(root_, Null_);
-        max_ = find_max(root_, Null_);
+        min_ = detail::find_min(root_, Null_);
+        max_ = detail::find_max(root_, Null_);
         put_min_max_in_null();
     }
 
@@ -203,7 +203,7 @@ public:
         return *this;
     }
 
-    ~SearchTree()
+    virtual ~SearchTree()
     {
         node_ptr current = root_;
 
@@ -350,7 +350,7 @@ public:
         Iterator& operator++()
         {
             if (node_->right_ != Null_)
-                node_ = find_min(node_->right_, Null_);
+                node_ = detail::find_min(node_->right_, Null_);
             else
             {
                 auto parent = node_->parent_;
@@ -377,7 +377,7 @@ public:
             if (node_ == Null_)
                 node_ = Null_->right_;
             else if (node_->left_ != Null_)
-                node_ = find_max(node_->left, Null_);
+                node_ = detail::find_max(node_->left, Null_);
             else
             {    
                 auto parent = node_->parent_;
@@ -442,7 +442,7 @@ public:
         ConstIterator& operator++()
         {
             if (node_->right_ != Null_)
-                node_ = find_min(node_->right_, Null_);
+                node_ = detail::find_min(node_->right_, Null_);
             else
             {
                 auto parent = node_->parent_;
@@ -469,7 +469,7 @@ public:
             if (node_ == Null_)
                 node_ = Null_->right_;
             else if (node_->left_ != Null_)
-                node_ = find_max(node_->left, Null_);
+                node_ = detail::find_max(node_->left, Null_);
             else
             {    
                 auto parent = node_->parent_;
@@ -539,7 +539,7 @@ public:
             // increament size
             size_++;
             // create root
-            root_ = new node_type{key, Colors::Black, Null_, Null_, Null_};
+            root_ = new node_type{key, detail::Colors::Black, Null_, Null_, Null_};
             // upadte min and max
             min_ = root_;
             max_ = root_;
@@ -573,16 +573,13 @@ public:
         size_++; 
         // create new node with key equal to input key, with red color,
         // with parent and without sons
-        node_ptr z = new node_type{key, Colors::Red, y, Null_, Null_};
+        node_ptr z = new node_type{key, detail::Colors::Red, y, Null_, Null_};
 
         // insert new node in right place
         if (cmp(z->key_, y->key_))
             y->left_ = z;
         else
             y->right_ = z;
-
-        // fix min and max pointers
-        fix_min_max(z);
         // fix red-black properties
         rb_insert_fix(z);
         // return pair with iterator on new node and true
@@ -602,15 +599,17 @@ private:
 
     void rb_insert_fix(node_ptr node)
     {
+        // fix min and max pointers
+        fix_min_max(node);
         // if parent color is Black of all invariants holds
-        while (node->parent_->color_ == Colors::Red)
+        while (node->parent_->color_ == detail::Colors::Red)
             // if parent is right son of grandparent
             if (node->parent_ == node->parent_->parent_->left_)
             {
                 // uncle declare
                 node_ptr uncle = node->parent_->parent_->right_;
                 // Case 1
-                if (uncle->color_ == Colors::Red)
+                if (uncle->color_ == detail::Colors::Red)
                 {
                     /*\___________________________________________________
                     |*                                                    |
@@ -627,9 +626,9 @@ private:
                     |*____________________________________________________|
                     \*/
                     // Comment to picture: dont matter which son of parent is node (right or left)
-                    node->parent_->color_          = Colors::Black;
-                    uncle->color_                  = Colors::Black;
-                    node->parent_->parent_->color_ = Colors::Red;
+                    node->parent_->color_          = detail::Colors::Black;
+                    uncle->color_                  = detail::Colors::Black;
+                    node->parent_->parent_->color_ = detail::Colors::Red;
                     // new node for new iteration of cycle
                     node = node->parent_->parent_;
                     /*\
@@ -677,8 +676,8 @@ private:
                     |*  alpha beta                                                        |
                     |* ___________________________________________________________________|
                     \*/
-                    node->parent_->color_          = Colors::Black;
-                    node->parent_->parent_->color_ = Colors::Red;
+                    node->parent_->color_          = detail::Colors::Black;
+                    node->parent_->parent_->color_ = detail::Colors::Red;
                     right_rotate(node->parent_->parent_);
                     /*
                      * After this case tree will be finally fixed and
@@ -690,11 +689,11 @@ private:
             else
             {
                 node_ptr uncle = node->parent_->parent_->left_;
-                if (uncle->color_ == Colors::Red)
+                if (uncle->color_ == detail::Colors::Red)
                 {
-                    node->parent_->color_          = Colors::Black;
-                    uncle->color_                  = Colors::Black;
-                    node->parent_->parent_->color_ = Colors::Red;
+                    node->parent_->color_          = detail::Colors::Black;
+                    uncle->color_                  = detail::Colors::Black;
+                    node->parent_->parent_->color_ = detail::Colors::Red;
                     node = node->parent_->parent_;
                 }
                 else
@@ -704,13 +703,13 @@ private:
                         node = node->parent_;
                         right_rotate(node);
                     }
-                    node->parent_->color_ = Colors::Black;
-                    node->parent_->parent_->color_ = Colors::Red;
+                    node->parent_->color_ = detail::Colors::Black;
+                    node->parent_->parent_->color_ = detail::Colors::Red;
                     left_rotate(node->parent_->parent_);
                 }
             }
         // fix invariont that is "root is black"
-        root_->color_ = Colors::Black;
+        root_->color_ = detail::Colors::Black;
     }
 //----------------------------------------=| Insert end |=----------------------------------------------
 
@@ -788,7 +787,7 @@ public:
         {
             // find y in right subtree of x
             // y most left of z->right than y->left_ == Null_
-            y = find_min(z->right_);
+            y = detail::find_min(z->right_, Null_);
             // save original color of y node
             // (look at the end of method to see cause)
             y_original_color = y->color_;
@@ -810,7 +809,7 @@ public:
                 y->right_ = z->right_;
                 y->right_->parent_ = y;
             }
-            //second arrow on picture
+            // second arrow on picture
             // replace z with y
             transplant(z, y);
             // connect left son of z with y
@@ -826,8 +825,13 @@ public:
         // in first two cases ("if" and "else if")
         // if z had the Red color, then we cant broke any invarinats
         // in third case, if y was Red we cant broke any invarints too
-        if (y_original_color == Colors::Black)
+        if (y_original_color == detail::Colors::Black)
             rb_delete_fixup(x);
+    }
+
+    void rb_delete_fixup(node_ptr x)
+    {
+        while (true) {}
     }
 //----------------------------------------=| Erase end |=-----------------------------------------------
 
@@ -876,7 +880,7 @@ private:
         {
             node_ptr node = itr.get();
             file << "Node_" << node << "[fillcolor=";
-            if (node->color_ == Colors::Red)    
+            if (node->color_ == detail::Colors::Red)    
                 file << "red, fontcolor=black";
             else
                 file << "black, color=red";
