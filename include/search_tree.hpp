@@ -33,7 +33,7 @@ struct RBNode
 
 // for sorted search tree
 template<typename KeyT>
-RBNode<KeyT>* find_min(RBNode<KeyT>* root, const RBNode<KeyT>* Null)
+RBNode<KeyT>* find_min(RBNode<KeyT>* root, const RBNode<KeyT>* Null) noexcept
 {
     RBNode<KeyT>* node = root;
     for (node = root; node->left_ != Null; node = node->left_) {}
@@ -42,11 +42,46 @@ RBNode<KeyT>* find_min(RBNode<KeyT>* root, const RBNode<KeyT>* Null)
 
 // for sorted search tree
 template<typename KeyT>
-RBNode<KeyT>* find_max(RBNode<KeyT>* root, const RBNode<KeyT>* Null)
+RBNode<KeyT>* find_max(RBNode<KeyT>* root, const RBNode<KeyT>* Null) noexcept
 {
     RBNode<KeyT>* node = root;
     for (node = root; node->right_ != Null; node = node->right_) {}
     return node;
+}
+
+template<typename KeyT>
+void destroy(RBNode<KeyT>* root, RBNode<KeyT>* Null)
+{
+    auto current = root;
+
+    while (current != Null)
+    {
+        if (current->left_ != Null)
+            current = current->left_;
+        else if (current->right_ != Null)
+            current = current->right_;
+        else
+        {
+            if (current->parent_ == Null)
+            {
+                delete root;
+                break;
+            }
+            if (current->is_left_son())
+            {
+                current = current->parent_;
+                delete current->left_;
+                current->left_ = Null;
+            }
+            else
+            {
+                current = current->parent_;
+                delete current->right_;
+                current->right_ = Null;
+            }
+        }
+    }
+    delete Null;
 }
 
 } // namespace detail
@@ -58,6 +93,7 @@ class SearchTree
     using node_ptr       = node_type*;
     using const_node_ptr = const node_type*;
     using key_type       = KeyT;
+    using reference      = key_type&;
     using size_type      = typename std::size_t;
 
     node_ptr null_init() const
@@ -76,6 +112,11 @@ class SearchTree
 
     size_type size_ = 0;
     Cmp cmp {};
+    bool key_less(const key_type& key1, const key_type& key2) const {return cmp(key1, key2);}
+    bool key_equal(const key_type& key1, const key_type& key2) const
+    {
+        return !cmp(key1, key2) && !cmp(key2, key1);
+    }
 
 // sub func
 private:
@@ -118,69 +159,56 @@ public:
 //----------------------------------------=| Big five start |=------------------------------------------
     SearchTree(const SearchTree& other): size_ {other.size_}
     {
+        auto root = Null_;
+
         if (empty())
             return;
-
-        root_ = new node_type{other.root_->key_, other.root_->color_, Null_, Null_, Null_};
-        auto this_current = root_;
-        auto other_current = other.root_;
-
-        while (other_current != other.Null_)
+        try
         {
-            if (other_current->left_ != other.Null_ && this_current->left_ == Null_)
+            root = new node_type{other.root_->key_, other.root_->color_, Null_, Null_, Null_};
+            auto this_current  = root;
+            auto other_current = other.root_;
+
+            while (other_current != other.Null_)
             {
-                this_current->left_ = new node_type{other_current->left_->key_, other_current->left_->color_, this_current, Null_, Null_};
-                other_current = other_current->left_;
-                this_current = this_current->left_;
-            }
-            else if (other_current->right_ != other.Null_ && this_current->right == Null_)
-            {
-                this_current->right_ = new node_type{other_current->left_->key_, other_current->left_->color_, this_current, Null_, Null_};
-                other_current = other_current->right_;
-                this_current = this_current->right_;
-            }
-            else
-            {
-                other_current = other_current->parent_;
-                this_current = this_current->parent_;
+                if (other_current->left_ != other.Null_ && this_current->left_ == Null_)
+                {
+                    this_current->left_ = new node_type{other_current->left_->key_, other_current->left_->color_, this_current, Null_, Null_};
+                    other_current = other_current->left_;
+                    this_current = this_current->left_;
+                }
+                else if (other_current->right_ != other.Null_ && this_current->right == Null_)
+                {
+                    this_current->right_ = new node_type{other_current->left_->key_, other_current->left_->color_, this_current, Null_, Null_};
+                    other_current = other_current->right_;
+                    this_current = this_current->right_;
+                }
+                else
+                {
+                    other_current = other_current->parent_;
+                    this_current = this_current->parent_;
+                }
             }
         }
-
+        catch(...)
+        {
+            destroy(root);
+            throw;
+        }
+        
+        root_ = root;
         min_ = detail::find_min(root_, Null_);
         max_ = detail::find_max(root_, Null_);
-        put_min_max_in_null();
+        put_min_max_in_null();  
     }
 
-// recursive copy ctor
-/*
-    SearchTree(const SearchTree& other): size_ {other.size_}
-    {
-        root_ = recursive_copy(other.root_, Null_, other.Null_);
-        min_  = find_min();
-        max_  = find_max(); 
-    }
-
-private:
-    node_ptr recursive_copy(node_ptr other_node, node_ptr this_parent, node_ptr other_Null_) const
-    {
-        if (other_node == other_Null_)
-            return Null_;
-
-        node_ptr this_node = new node_type{other_node->key_, other_node->color_, this_parent};
-
-        this_node->left_  = recursive_copy(other_node->left_, this_node, other_Null_);
-        this_node->right_ = recursive_copy(other_node->right_, this_node, other_Null_);
-
-        return this_node;
-    }
-*/
 private:
     void swap(SearchTree& other) noexcept
     {
         std::swap(Null_, other.Null_);
         std::swap(root_, other.root_);
-        std::swap(min_, other.min_);
-        std::swap(max_, other.max_);
+        std::swap(min_,   other.min_);
+        std::swap(max_,   other.max_);
         std::swap(size_, other.size_);
     }
 
@@ -205,37 +233,7 @@ public:
 
     virtual ~SearchTree()
     {
-        node_ptr current = root_;
-
-        while (current != Null_)
-        {
-            if (current->left_ != Null_)
-                current = current->left_;
-            else if (current->right_ != Null_)
-                current = current->right_;
-            else
-            {
-                if (current->parent_ == Null_)
-                {
-                    delete root_;
-                    break;
-                }
-                if (current->is_left_son())
-                {
-                    current = current->parent_;
-                    delete current->left_;
-                    current->left_ = Null_;
-                }
-                else
-                {
-                    current = current->parent_;
-                    delete current->right_;
-                    current->right_ = Null_;
-                }
-                size_--;
-            }
-        }
-        delete Null_;
+        destroy(root_, Null_);
     }
 //----------------------------------------=| Big five end |=--------------------------------------------
 
@@ -252,7 +250,7 @@ private:
     |*       yl     yr                l     yl          |
     |*__________________________________________________|
     \*/
-    void left_rotate(node_ptr x)
+    void left_rotate(node_ptr x) noexcept
     {
         // declare y as right son of x
         node_ptr y = x->right_;
@@ -296,7 +294,7 @@ private:
     |* yl     yr                           yr      r    |
     |* _________________________________________________|
     \*/
-    void right_rotate(node_ptr x)
+    void right_rotate(node_ptr x) noexcept
     {
         node_ptr y = x->left_;
         x->left_ = y->right_;
@@ -521,83 +519,117 @@ public:
     {
         node_ptr node = root_;
         while (node != Null_)
-            if (cmp(key, node->key_))
+            if (key_less(key, node->key_))
                 node = node->left_;
-            else if (cmp(node->key_, key))
+            else if (key_less(node->key_, key))
                 node = node->right_;
             else
                 return Iterator{node, Null_};
     }
 //----------------------------------------=| Find end |=------------------------------------------------
 
-//----------------------------------------=| Insert end |=----------------------------------------------
-    std::pair<Iterator, bool> insert(const key_type& key)
+    node_ptr find_parent(const key_type& key) const noexcept
     {
-        // if tree is empty
-        if (empty())
-        {
-            // increament size
-            size_++;
-            // create root
-            root_ = new node_type{key, detail::Colors::Black, Null_, Null_, Null_};
-            // upadte min and max
-            min_ = root_;
-            max_ = root_;
-            put_min_max_in_null();
-            // return pair with itr on root and true
-            return std::pair{Iterator{root_, Null_}, true};
-        }
-        // declare two nodes
-        node_ptr x = root_;
-        node_ptr y = Null_;
-        
-        // search place to insert
-        // y will be parent
+        auto x = root_;
+        auto y = Null_;
+
         while (x != Null_)
         {
             // save pointer on x before turn
             y = x;
             // if key less x.key turn left
-            if (cmp(key, x->key_))
+            if (key_less(key, x->key_))
                 x = x->left_;
             // else turn right
             else
                 x = x->right_;
         }
+        return y;
+    }
 
-        // if this key already in tree, then return default iterator and false
-        if (cmp(y->key_, key) == cmp(key, y->key_))
-            return std::pair{end(), false};
+//----------------------------------------=| Insert start |=--------------------------------------------
+    void insert_by_ptr(node_ptr node) noexcept
+    {
+        assert(node != nullptr);
+        assert(node->color_ == detail::Colors::Red);
+        assert(node->left_ == Null_);
+        assert(node->right_ == Null_);
 
         // increament size
-        size_++; 
-        // create new node with key equal to input key, with red color,
-        // with parent and without sons
-        node_ptr z = new node_type{key, detail::Colors::Red, y, Null_, Null_};
+        size_++;
 
+        // if tree is empty
+        if (node->parent_ == Null_)
+        {
+            // root is node
+            root_ = node;
+            root_->color_ = detail::Colors::Black;
+            // upadte min and max
+            min_ = root_;
+            max_ = root_;
+            put_min_max_in_null();
+            return;
+        }
+        
         // insert new node in right place
-        if (cmp(z->key_, y->key_))
-            y->left_ = z;
+        if (key_less(node->key_, node->parent_->key_))
+            node->parent_->left_ = node;
         else
-            y->right_ = z;
+            node->parent_->right_ = node;
         // fix red-black properties
-        rb_insert_fix(z);
-        // return pair with iterator on new node and true
-        return std::pair{Iterator{z, Null_}, true};
+        rb_insert_fix(node);
+    }
+
+    std::pair<Iterator, bool> insert(const key_type& key)
+    {
+        auto parent = find_parent(key);
+
+        // if key is alredy in tree
+        if (parent != Null_ && key_equal(parent->key_, key))
+            return std::pair{Iterator{parent, Null_}, false};
+        
+        node_ptr new_node = new node_type{key, detail::Colors::Red, parent, Null_, Null_};
+        insert_by_ptr(new_node);
+        return std::pair{Iterator{new_node, Null_}, true};
+    }
+
+    std::pair<Iterator, bool> insert(key_type&& key) noexcept(noexcept(key_type(key)))
+    {
+        auto parent = find_parent(key);
+
+        // if key is alredy in tree
+        if (parent != Null_ && key_equal(parent->key_, key))
+            return std::pair{Iterator{parent, Null_}, false};
+        
+        node_ptr new_node = new node_type{std::move(key), detail::Colors::Red, parent, Null_, Null_};
+        insert_by_ptr(new_node);
+        return std::pair{Iterator{new_node, Null_}, true};
+    }
+
+    template<std::input_iterator InpIt>
+    void insert(InpIt first, InpIt last)
+    {
+        for (auto itr = first; itr != last; ++itr)
+            insert(*itr);
+    }
+
+    void insert(std::initializer_list<key_type> initlist)
+    {
+        insert(initlist.begin(), initlist.end());
     }
 
 private:
-    void fix_min_max(node_ptr node)
+    void fix_min_max(node_ptr node) noexcept
     {
-        if (cmp(max_->key_, node->key_))
+        if (key_less(max_->key_, node->key_))
             max_ = node;
-        if (cmp(node->key_, min_->key_))
+        if (key_less(node->key_, min_->key_))
             min_ = node;
         put_min_max_in_null();
     }
 
 
-    void rb_insert_fix(node_ptr node)
+    void rb_insert_fix(node_ptr node) noexcept
     {
         // fix min and max pointers
         fix_min_max(node);
@@ -716,7 +748,7 @@ private:
 //----------------------------------------=| Erase start |=---------------------------------------------
 public:
     // replace subtree with root u with subtree with root v
-    void transplant(node_ptr u, node_ptr v)
+    void transplant(node_ptr u, node_ptr v) noexcept
     {
         if (u == root_)
             root_ = v;
@@ -829,7 +861,7 @@ public:
             rb_delete_fixup(x);
     }
 
-    void rb_delete_fixup(node_ptr x)
+    void rb_delete_fixup(node_ptr x) noexcept
     {
         while (true) {}
     }
