@@ -136,18 +136,20 @@ public:
         put_min_max_in_null();
     }
 
-    SearchTree(std::initializer_list<key_type> list)
-    {
-        for (auto x: list)
-            insert(x);
+    template<std::input_iterator InpIt>
+    SearchTree(InpIt first, InpIt last)
+    {   
+        try {insert(first, last);}
+        catch(...)
+        {
+            destroy(root_, Null_);
+            throw;
+        }
     }
 
-    template<std::input_iterator It>
-    SearchTree(It begin, It end)
-    {   
-        for (auto itr = begin; itr != end; ++itr)
-            insert(*itr);
-    }
+    SearchTree(std::initializer_list<key_type> initlist)
+    :SearchTree(initlist.begin(), initlist.end())
+    {}
 //----------------------------------------=| Ctors end |=-----------------------------------------------
 
 //----------------------------------------=| Size`s funcs start |=--------------------------------------
