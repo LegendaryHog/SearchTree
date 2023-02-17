@@ -178,6 +178,14 @@ public:
         if(empty())
             throw std::underflow_error{"try to pop element from empty vector"};
         used_--;
+        destroy(data_ + used_);
+    }
+
+    value_type front()
+    {
+        if (empty())
+            throw std::underflow_error{"try to get back from empty vector"};
+        return data_[0];
     }
 
     class Iterator
