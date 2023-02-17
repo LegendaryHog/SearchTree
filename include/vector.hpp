@@ -151,16 +151,16 @@ public:
     void push(value_type&& val)
     {
         if (need_resize_up())
-            resize_up();
+            resize_up(2 * size_ + 1);
         
         detail::construct(data_ + used_++, std::move(val));
     }
 private:
     bool need_resize_up() const {used_ == size_;}
 
-    void resize_up()
+    void resize_up(size_type newsz)
     {
-        Vector tmp (2 * size_ + 1);
+        Vector tmp (newsz);
         while (tmp.used_ < used_)
             tmp.push(std::move(data_[tmp.used_]));
         std::swap(*this, tmp);
@@ -178,7 +178,7 @@ public:
         if(empty())
             throw std::underflow_error{"try to pop element from empty vector"};
         used_--;
-        destroy(data_ + used_);
+        detail::destroy(data_ + used_);
     }
 
     value_type front()
@@ -186,6 +186,38 @@ public:
         if (empty())
             throw std::underflow_error{"try to get back from empty vector"};
         return data_[0];
+    }
+
+    void shrink_to_fit()
+    {
+        assert(used_ <= size_);
+
+        if (used_ == size_)
+            return;
+
+        Vector tmp (used_);
+        while (tmp.used_ < used_)
+            tmp.push(std::move(data_[tmp.used_]));
+        std::swap(*this, tmp);
+    }
+
+    void clear()
+    {
+        detail::destroy(data_, data_ + used_);
+        used_ = 0;
+    }
+
+    void resize(size_type newsz)
+    {
+        if (size_ == newsz)
+            return;
+        else if (newsz > size_)
+            resize_up(newsz);
+        else if (newsz >= used_)
+            return;
+        else
+            for (size_type i = 0; i < used_ - newsz; i++)
+                pop_back();
     }
 
     class Iterator
