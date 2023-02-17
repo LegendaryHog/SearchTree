@@ -156,7 +156,7 @@ public:
         detail::construct(data_ + used_++, std::move(val));
     }
 private:
-    bool need_resize_up() const {used_ == size_};
+    bool need_resize_up() const {used_ == size_;}
 
     void resize_up()
     {
@@ -166,7 +166,7 @@ private:
         std::swap(*this, tmp);
     }
 public:
-    value_type top() const
+    value_type back() const
     {
         if (empty())
             throw std::underflow_error{"try to get back from empty vector"};
