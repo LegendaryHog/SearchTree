@@ -1,10 +1,9 @@
 #pragma once
 #include <functional>
-#include <stack>
-#include <set>
 #include <iterator>
 #include <fstream>
 #include <string>
+#include "vector.hpp"
 
 namespace Container
 {
@@ -24,7 +23,7 @@ struct RBNode
     using rbnode_ptr = RBNode*;   
 
     key_type  key_ {};
-    detail::Colors  color_  = detail::Colors::Red;
+    Colors  color_  = Colors::Red;
     rbnode_ptr parent_ = nullptr, left_ = nullptr, right_ = nullptr;
 
     bool is_left_son()  const noexcept {return this == parent_->left_;}
@@ -49,69 +48,34 @@ RBNode<KeyT>* find_max(RBNode<KeyT>* root, const RBNode<KeyT>* Null) noexcept
     return node;
 }
 
-template<typename KeyT>
-void destroy(RBNode<KeyT>* root, RBNode<KeyT>* Null)
-{
-    auto current = root;
-
-        while (current != Null)
-        {
-            if (current->left_ != Null)
-                current = current->left_;
-            else if (current->right_ != Null)
-                current = current->right_;
-            else
-            {
-                if (current->parent_ == Null)
-                {
-                    delete root;
-                    break;
-                }
-                if (current->is_left_son())
-                {
-                    current = current->parent_;
-                    delete current->left_;
-                    current->left_ = Null;
-                }
-                else
-                {
-                    current = current->parent_;
-                    delete current->right_;
-                    current->right_ = Null;
-                }
-            }
-        }
-        delete Null;
-}
-
 } // namespace detail
-
-template<typename KeyT = int, class Cmp = std::less<KeyT>>  
-class SearchTree
+template<typename KeyT = int, typename Node = detail::RBNode<KeyT>, class Cmp = std::less<KeyT>>  
+class RBSearchTree
 {
-    using node_type      = detail::RBNode<KeyT>;
-    using node_ptr       = node_type*;
+    using node_type      = Node;
+    using node_ptr       = Node*;
     using const_node_ptr = const node_type*;
     using key_type       = KeyT;
     using reference      = key_type&;
     using size_type      = typename std::size_t;
+    using Colors         = detail::Colors;
 
-    node_ptr null_init() const
+    Vector<node_type> vector {node_type{key_type{}, Colors::Black}};
+
+    node_ptr null_init()
     {
-        node_ptr Null = new node_type{{}, detail::Colors::Black};
-        Null->parent_ = Null;
-        Null->left_   = Null;
-        Null->right_  = Null;
-        return Null;
+        vector[0].left_   = std::to_address(vector.begin());
+        vector[0].right_  = std::to_address(vector.begin());
+        vector[0].parent_ = std::to_address(vector.begin());
+        return std::to_address(vector.begin());
     }
 
-    node_ptr Null_ = null_init(); // all of nullptr is replaced on null_, for minimalize checking
+    node_ptr Null_ = null_init(); // all of nullptr is replaced on Null_, for minimalize checking
 
     node_ptr root_ = Null_;
     node_ptr max_  = Null_;
     node_ptr min_  = Null_;
 
-    size_type size_ = 0;
     Cmp cmp {};
     bool key_less(const key_type& key1, const key_type& key2) const {return cmp(key1, key2);}
     bool key_equal(const key_type& key1, const key_type& key2) const
@@ -129,129 +93,106 @@ private:
 
 //----------------------------------------=| Ctors start |=---------------------------------------------
 public:
-    SearchTree() = default;
+    RBSearchTree() = default;
 
-    SearchTree(const key_type& key)
+    RBSearchTree(const key_type& key)
     {
-        try {insert(key);}
-        catch(...)
-        {
-            destroy(root_, Null_);
-            throw;
-        }
+        insert(key);
     }
 
-    SearchTree(key_type&& key)
+    RBSearchTree(key_type&& key)
     {
-        try {insert(key);}
-        catch(...)
-        {
-            destroy(root_, Null_);
-            throw;
-        }
+        insert(key);
     }
 
     template<std::input_iterator InpIt>
-    SearchTree(InpIt first, InpIt last)
+    RBSearchTree(InpIt first, InpIt last)
     {   
-        try {insert(first, last);}
-        catch(...)
-        {
-            destroy(root_, Null_);
-            throw;
-        }
+        insert(first, last);
     }
 
-    SearchTree(std::initializer_list<key_type> initlist)
-    :SearchTree(initlist.begin(), initlist.end())
+    RBSearchTree(std::initializer_list<key_type> initlist)
+    :RBSearchTree(initlist.begin(), initlist.end())
     {}
 //----------------------------------------=| Ctors end |=-----------------------------------------------
 
 //----------------------------------------=| Size`s funcs start |=--------------------------------------
-    size_type size() const {return size_;}
+    size_type size() const {return vector.size() - 1;}
 
-    bool empty() const {return (size_ == 0);}
+    bool empty() const {return (vector.size() == 1);}
 //----------------------------------------=| Size`s funcs end |=----------------------------------------
 
 //----------------------------------------=| Big five start |=------------------------------------------
-    SearchTree(const SearchTree& other): size_ {other.size_}
+private:
+    void push_node_left(node_ptr this_current, node_ptr other_left)
+    {
+        vector.push_back(node_type{other_left->key_, other_left->color_, this_current, Null_, Null_});
+        this_current->left_ = std::to_address(vector.end() - 1);
+    }
+
+    void push_node_right(node_ptr this_current, node_ptr other_right)
+    {
+        vector.push_back(node_type{other_right->key_, other_right->color_, this_current, Null_, Null_});
+        this_current->right_ = std::to_address(vector.end() - 1);
+    }
+
+    void push_root(node_ptr other_root)
+    {
+        vector.push_back(node_type{other_root->key_, other_root->color_, Null_, Null_, Null_});
+        root_ = std::to_address(vector.end() - 1);
+    }
+
+public:
+    RBSearchTree(const RBSearchTree& other)
     {
         auto root = Null_;
 
-        if (empty())
+        if (other.empty())
             return;
-        try
-        {
-            root = new node_type{other.root_->key_, other.root_->color_, Null_, Null_, Null_};
-            auto this_current  = root;
-            auto other_current = other.root_;
 
-            while (other_current != other.Null_)
+        push_root(other.root_);
+        auto this_current  = root;
+        auto other_current = other.root_;
+
+        while (other_current != other.Null_)
+        {
+            if (other_current->left_ != other.Null_ && this_current->left_ == Null_)
             {
-                if (other_current->left_ != other.Null_ && this_current->left_ == Null_)
-                {
-                    this_current->left_ = new node_type{other_current->left_->key_, other_current->left_->color_, this_current, Null_, Null_};
-                    other_current = other_current->left_;
-                    this_current = this_current->left_;
-                }
-                else if (other_current->right_ != other.Null_ && this_current->right == Null_)
-                {
-                    this_current->right_ = new node_type{other_current->left_->key_, other_current->left_->color_, this_current, Null_, Null_};
-                    other_current = other_current->right_;
-                    this_current = this_current->right_;
-                }
-                else
-                {
-                    other_current = other_current->parent_;
-                    this_current = this_current->parent_;
-                }
+                push_node_left(this_current, other_current->left_);
+                other_current = other_current->left_;
+                this_current = this_current->left_;
+            }
+            else if (other_current->right_ != other.Null_ && this_current->right == Null_)
+            {
+                push_node_right(this_current, other_current->right_);
+                other_current = other_current->right_;
+                this_current = this_current->right_;
+            }
+            else
+            {
+                other_current = other_current->parent_;
+                this_current = this_current->parent_;
             }
         }
-        catch(...)
-        {
-            destroy(root);
-            throw;
-        }
         
-        root_ = root;
         min_ = detail::find_min(root_, Null_);
         max_ = detail::find_max(root_, Null_);
         put_min_max_in_null();  
     }
 
-private:
-    void swap(SearchTree& other) noexcept
-    {
-        std::swap(Null_, other.Null_);
-        std::swap(root_, other.root_);
-        std::swap(min_,   other.min_);
-        std::swap(max_,   other.max_);
-        std::swap(size_, other.size_);
-    }
-
 public:
-    SearchTree(SearchTree&& other) noexcept
-    {
-        swap(other);
-    }
+    RBSearchTree(RBSearchTree&& other)          = default;
+    RBSearchTree& operator=(RBSearchTree&& rhs) = default;
 
-    SearchTree& operator=(const SearchTree& rhs)
+
+    RBSearchTree& operator=(const RBSearchTree& rhs)
     {
         auto rhs_cpy {rhs};
-        swap(rhs);
+        std::swap(*this, rhs);
         return *this;
     }
 
-    SearchTree& operator=(SearchTree&& rhs) noexcept
-    {
-        swap(rhs);
-        return *this;
-    }
-
-    virtual ~SearchTree()
-    {
-        destroy(root_, Null_);
-    }
+    virtual ~RBSearchTree() = default;
 //----------------------------------------=| Big five end |=--------------------------------------------
 
 //----------------------------------------=| Algorithm funcs start |=-----------------------------------
@@ -519,14 +460,14 @@ public:
         node_ptr get() const {return node_;}
     }; // class ConstIterator
 
-    Iterator begin() & {return Iterator{min_, Null_};}
-    Iterator end()   & {return Iterator{Null_};}
+    Iterator begin() {return Iterator{min_, Null_};}
+    Iterator end()   {return Iterator{Null_};}
 
-    ConstIterator begin() const& {return ConstIterator{min_, Null_};}
-    ConstIterator end()   const& {return ConstIterator{Null_, Null_};}
+    ConstIterator begin() const {return ConstIterator{min_, Null_};}
+    ConstIterator end()   const {return ConstIterator{Null_, Null_};}
 
-    ConstIterator cbegin() const& {return ConstIterator{min_, Null_};}
-    ConstIterator cend()   const& {return ConstIterator{Null_, Null_};}
+    ConstIterator cbegin() const {return ConstIterator{min_, Null_};}
+    ConstIterator cend()   const {return ConstIterator{Null_, Null_};}
 
 //----------------------------------------=| Iterators end |=-------------------------------------------
 
@@ -568,19 +509,16 @@ public:
     void insert_by_ptr(node_ptr node) noexcept
     {
         assert(node != nullptr);
-        assert(node->color_ == detail::Colors::Red);
+        assert(node->color_ == Colors::Red);
         assert(node->left_ == Null_);
         assert(node->right_ == Null_);
-
-        // increament size
-        size_++;
 
         // if tree is empty
         if (node->parent_ == Null_)
         {
             // root is node
             root_ = node;
-            root_->color_ = detail::Colors::Black;
+            root_->color_ = Colors::Black;
             // upadte min and max
             min_ = root_;
             max_ = root_;
@@ -599,28 +537,27 @@ public:
 
     std::pair<Iterator, bool> insert(const key_type& key)
     {
-        auto parent = find_parent(key);
-
-        // if key is alredy in tree
-        if (parent != Null_ && key_equal(parent->key_, key))
-            return std::pair{Iterator{parent, Null_}, false};
-        
-        node_ptr new_node = new node_type{key, detail::Colors::Red, parent, Null_, Null_};
-        insert_by_ptr(new_node);
-        return std::pair{Iterator{new_node, Null_}, true};
+        key_type cpy {key};
+        return insert(std::move(cpy));
     }
 
-    std::pair<Iterator, bool> insert(key_type&& key) noexcept(noexcept(key_type(key)))
+    std::pair<Iterator, bool> insert(key_type&& key) noexcept
     {
         auto parent = find_parent(key);
 
         // if key is alredy in tree
         if (parent != Null_ && key_equal(parent->key_, key))
             return std::pair{Iterator{parent, Null_}, false};
-        
-        node_ptr new_node = new node_type{std::move(key), detail::Colors::Red, parent, Null_, Null_};
+
+        node_ptr new_node = create_node(std::move(key), parent);
         insert_by_ptr(new_node);
         return std::pair{Iterator{new_node, Null_}, true};
+    }
+
+    node_ptr create_node(key_type&& key, node_ptr parent)
+    {
+        vector.push_back(node_type{std::move(key), Colors::Red, parent, Null_, Null_});
+        return std::to_address(vector.end() - 1);
     }
 
     template<std::input_iterator InpIt>
@@ -651,14 +588,14 @@ private:
         // fix min and max pointers
         fix_min_max(node);
         // if parent color is Black of all invariants holds
-        while (node->parent_->color_ == detail::Colors::Red)
+        while (node->parent_->color_ == Colors::Red)
             // if parent is right son of grandparent
             if (node->parent_ == node->parent_->parent_->left_)
             {
                 // uncle declare
                 node_ptr uncle = node->parent_->parent_->right_;
                 // Case 1
-                if (uncle->color_ == detail::Colors::Red)
+                if (uncle->color_ == Colors::Red)
                 {
                     /*\___________________________________________________
                     |*                                                    |
@@ -675,9 +612,9 @@ private:
                     |*____________________________________________________|
                     \*/
                     // Comment to picture: dont matter which son of parent is node (right or left)
-                    node->parent_->color_          = detail::Colors::Black;
-                    uncle->color_                  = detail::Colors::Black;
-                    node->parent_->parent_->color_ = detail::Colors::Red;
+                    node->parent_->color_          = Colors::Black;
+                    uncle->color_                  = Colors::Black;
+                    node->parent_->parent_->color_ = Colors::Red;
                     // new node for new iteration of cycle
                     node = node->parent_->parent_;
                     /*\
@@ -725,8 +662,8 @@ private:
                     |*  alpha beta                                                        |
                     |* ___________________________________________________________________|
                     \*/
-                    node->parent_->color_          = detail::Colors::Black;
-                    node->parent_->parent_->color_ = detail::Colors::Red;
+                    node->parent_->color_          = Colors::Black;
+                    node->parent_->parent_->color_ = Colors::Red;
                     right_rotate(node->parent_->parent_);
                     /*
                      * After this case tree will be finally fixed and
@@ -738,11 +675,11 @@ private:
             else
             {
                 node_ptr uncle = node->parent_->parent_->left_;
-                if (uncle->color_ == detail::Colors::Red)
+                if (uncle->color_ == Colors::Red)
                 {
-                    node->parent_->color_          = detail::Colors::Black;
-                    uncle->color_                  = detail::Colors::Black;
-                    node->parent_->parent_->color_ = detail::Colors::Red;
+                    node->parent_->color_          = Colors::Black;
+                    uncle->color_                  = Colors::Black;
+                    node->parent_->parent_->color_ = Colors::Red;
                     node = node->parent_->parent_;
                 }
                 else
@@ -752,13 +689,13 @@ private:
                         node = node->parent_;
                         right_rotate(node);
                     }
-                    node->parent_->color_ = detail::Colors::Black;
-                    node->parent_->parent_->color_ = detail::Colors::Red;
+                    node->parent_->color_ = Colors::Black;
+                    node->parent_->parent_->color_ = Colors::Red;
                     left_rotate(node->parent_->parent_);
                 }
             }
         // fix invariont that is "root is black"
-        root_->color_ = detail::Colors::Black;
+        root_->color_ = Colors::Black;
     }
 //----------------------------------------=| Insert end |=----------------------------------------------
 
@@ -874,7 +811,7 @@ public:
         // in first two cases ("if" and "else if")
         // if z had the Red color, then we cant broke any invarinats
         // in third case, if y was Red we cant broke any invarints too
-        if (y_original_color == detail::Colors::Black)
+        if (y_original_color == Colors::Black)
             rb_delete_fixup(x);
     }
 
@@ -906,7 +843,7 @@ public:
 private:
     void descriptor_dump(std::fstream& file) const
     {
-        file << "\tTree [fillcolor=purple, label = \"{ SearchTree\\ndescriptor| size: " << size_ << "| <root> root:\\n " << root_
+        file << "\tTree [fillcolor=purple, label = \"{ RBSearchTree\\ndescriptor| size: " << size() << "| <root> root:\\n " << root_
         << "| min:\\n " << min_  << "\\n min key: " << min_->key_
         << "| max:\\n " << max_ << "\\n max key: " << max_->key_ <<
         "| <null> Null:\\n " << Null_ << "}\"];" << std::endl;
@@ -929,7 +866,7 @@ private:
         {
             node_ptr node = itr.get();
             file << "Node_" << node << "[fillcolor=";
-            if (node->color_ == detail::Colors::Red)    
+            if (node->color_ == Colors::Red)    
                 file << "red, fontcolor=black";
             else
                 file << "black, color=red";
@@ -953,6 +890,6 @@ private:
     }
 #endif
 //----------------------------------------=| Graph dump end |=------------------------------------------
-}; // class SearchTree
+}; // class RBSearchTree
 
 } // namespace Container
