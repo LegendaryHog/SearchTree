@@ -50,86 +50,39 @@ RBNode<KeyT>* find_max(RBNode<KeyT>* root, const RBNode<KeyT>* Null) noexcept
 }
 
 template<typename KeyT>
-void destroy(RBNode<KeyT>* node)
+void destroy(RBNode<KeyT>* root, RBNode<KeyT>* Null)
 {
-    node
-}
+    auto current = root;
 
-
-template<typename Node>
-class RBTreeBuf
-{
-    using node_type = Node;
-    using node_ptr  = node_type*;
-
-    node_ptr null_init() const
-    {
-        node_ptr Null =static_cast<node_ptr>(::operator new(sizeof(Node)));
-        Null->left_  = Null;
-        Null->right_ = Null;
-        return Null;
-    }
-protected:
-    node_ptr root_, Null_ = null_init();
-protected:
-    RBTreeBuf() = default;
-
-    RBTreeBuf(const RBTreeBuf&)             = delete;
-    RBTreeBuf&  operator=(const RBTreeBuf&) = delete;
-
-    void swap(RBTree& rhs)
-    {
-        std::swap(root_, rhs.root_);
-        std::swap(Null_, rhs.Null_);
-    }
-
-    RBTreeBuf(RBTreeBuf&& rhs) noexcept
-    {
-        swap(rhs);
-    }
-
-    RBTreeBuf& operator=(RBTreeBuf&& rhs) noexcept
-    {
-        swap(rhs);
-        return *this;
-    }
-
-    void insert_right()
-
-    virtual ~RBTreeBuf()
-    {
-        auto current = root_;
-
-        while (current != Null_)
+        while (current != Null)
         {
-            if (current->left_ != Null_)
+            if (current->left_ != Null)
                 current = current->left_;
-            else if (current->right_ != Null_)
+            else if (current->right_ != Null)
                 current = current->right_;
             else
             {
-                if (current->parent_ == Null_)
+                if (current->parent_ == Null)
                 {
-                    delete root_;
+                    delete root;
                     break;
                 }
                 if (current->is_left_son())
                 {
                     current = current->parent_;
                     delete current->left_;
-                    current->left_ = Null_;
+                    current->left_ = Null;
                 }
                 else
                 {
                     current = current->parent_;
                     delete current->right_;
-                    current->right_ = Null_;
+                    current->right_ = Null;
                 }
             }
         }
-        delete Null_;
-    }
-};
+        delete Null;
+}
 
 } // namespace detail
 
@@ -142,6 +95,15 @@ class SearchTree
     using key_type       = KeyT;
     using reference      = key_type&;
     using size_type      = typename std::size_t;
+
+    node_ptr null_init() const
+    {
+        node_ptr Null = new node_type{{}, detail::Colors::Black};
+        Null->parent_ = Null;
+        Null->left_   = Null;
+        Null->right_  = Null;
+        return Null;
+    }
 
     node_ptr Null_ = null_init(); // all of nullptr is replaced on null_, for minimalize checking
 

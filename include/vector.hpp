@@ -1,5 +1,5 @@
 #pragma once
-#include <iterator>
+#include "contiguous_iterator.hpp"
 #include <initializer_list>
 
 namespace Container
@@ -32,10 +32,10 @@ class VectorBuf
     using size_type  = typename std::size_t;
 protected:
     size_type size_, used_ = 0;
-    pointer data = nullptr;
+    pointer data_ = nullptr;
 protected:
     VectorBuf(size_type size = 0)
-    :size_ {size}
+    :size_ {size},  
      data_ {(size_ == 0) ? nullptr : static_cast<pointer>(::operator new(sizeof(value_type) * size_))}
     {}
 
@@ -88,7 +88,7 @@ public:
     Vector(InpIt first, InpIt last): base::VectorBuf(std::distance(first, last))
     {
         while (first != last)
-            construct(data_ + used_++, *first++);   
+            detail::construct(data_ + used_++, *first++);   
     }
 
     Vector(std::initializer_list<T> initlist)
@@ -105,7 +105,7 @@ public:
             detail::construct(data_ + i, rhs.data[i]);
     }
 
-    Vcetor& operator=(const Vector& rhs)
+    Vector& operator=(const Vector& rhs)
     {
         auto cpy {rhs};
         std::swap(*this, cpy);
@@ -114,13 +114,17 @@ public:
 
     ~Vector()
     {
-        destroy(data_, data_ + used_);
+        detail::destroy(data_, data_ + used_);
     }
 
 public:
     size_type size() const {return used_;}
-    size_type capacity() const {return size_};
+    size_type capacity() const {return size_;}
     bool empty() const {return used_ == 0;}
+
+    reference       operator[](size_type index) &      noexcept {return data_[index];}
+    const_reference operator[](size_type index) const& noexcept {return data_[index];}
+    value_type      operator[](size_type index) &&     noexcept {return data_[index];}
 
     reference at(size_type index) &  
     {
@@ -142,13 +146,13 @@ public:
     }
 
 public:
-    void push(const value_type& val)
+    void push_back(const value_type& val)
     {
         auto cpy {val};
-        push(std::move(cpy));
+        push_back(std::move(cpy));
     }
 
-    void push(value_type&& val)
+    void push_back(value_type&& val)
     {
         if (need_resize_up())
             resize_up(2 * size_ + 1);
@@ -156,13 +160,13 @@ public:
         detail::construct(data_ + used_++, std::move(val));
     }
 private:
-    bool need_resize_up() const {used_ == size_;}
+    bool need_resize_up() const {return (used_ == size_);}
 
     void resize_up(size_type newsz)
     {
         Vector tmp (newsz);
         while (tmp.used_ < used_)
-            tmp.push(std::move(data_[tmp.used_]));
+            tmp.push_back(std::move(data_[tmp.used_]));
         std::swap(*this, tmp);
     }
 public:
@@ -173,7 +177,7 @@ public:
         return data_[used_ - 1];
     }
 
-    void pop()
+    void pop_back()
     {
         if(empty())
             throw std::underflow_error{"try to pop element from empty vector"};
@@ -197,7 +201,7 @@ public:
 
         Vector tmp (used_);
         while (tmp.used_ < used_)
-            tmp.push(std::move(data_[tmp.used_]));
+            tmp.push_back(std::move(data_[tmp.used_]));
         std::swap(*this, tmp);
     }
 
@@ -209,197 +213,35 @@ public:
 
     void resize(size_type newsz)
     {
-        if (size_ == newsz)
-            return;
-        else if (newsz > size_)
-            resize_up(newsz);
-        else if (newsz >= used_)
-            return;
-        else
-            for (size_type i = 0; i < used_ - newsz; i++)
+        if (newsz < used_)
+            while (used_ != newsz)
                 pop_back();
+        else
+            while (used_ != newsz)
+                push_back(value_type{});
     }
 
-    class Iterator
+    void resize(size_type newsz, const value_type& value)
     {
-    public:
-        using iterator_category = typename std::random_access_iterator_tag;
-        using difference_type   = typename std::ptrdiff_t;
-        using value_type        = T;
-        using pointer           = T*;
-        using reference         = T&;
+        if (newsz < used_)
+            while (used_ != newsz)
+                pop_back();
+        else
+            while (used_ != newsz)
+                push_back(value);
+    }
 
-    private:
-        pointer ptr_;
-        
-    public:
-        explicit Iterator(pointer ptr = nullptr)
-        :ptr_ {ptr}
-        {}
-
-        reference operator*()  const noexcept {return *ptr_;}
-        pointer   operator->() const noexcept {return ptr_;}
-
-        Iterator& operator++()
-        {
-            ptr_++;
-            return *this;
-        }
-
-        Iterator operator++(int)
-        {
-            Iterator tmp {*this};
-            ++(*this);
-            return tmp;
-        }
-            
-        Iterator& operator--()
-        {
-            ptr_--;
-            return *this;
-        }
-
-        Iterator operator--(int)
-        {
-            Iterator tmp {*this};
-            --(*this);
-            return tmp;
-        }
-
-        Iterator& operator+=(const difference_type& rhs)
-        {
-            ptr_ += rhs;
-            return *this;
-        }
-
-        Iterator& operator-=(const difference_type& rhs)
-        {
-            ptr_ -= rhs;
-            return *this;
-        }
-
-        reference operator[](const difference_type& diff) const
-        {
-            return *(Iterator{*this} += diff);
-        }
-
-        std::strong_ordering operator<=>(const Iterator& rhs) const = default;
-
-        difference_type operator-(const Iterator& rhs) const
-        {
-            return ptr_ - rhs.ptr_;
-        }
-
-        Iterator operator+(const difference_type& diff) const
-        {
-            return (Iterator{*this} += diff);
-        }
-
-        Iterator operator-(const difference_type& diff) const
-        {
-            return (Iterator{*this} -= diff);
-        }
-
-        friend Iterator operator+(const difference_type& diff, const Iterator& itr)
-        {
-            return itr + diff;
-        }
-    }; //class Iterator
-
-    class ConstIterator
-    {
-    public:
-        using iterator_category = typename std::random_access_iterator_tag;
-        using difference_type   = typename std::ptrdiff_t;
-        using value_type        = T;
-        using const_pointer     = const T*;
-        using const_reference   = const T&;
-
-    private:
-        const_pointer ptr_;
-
-    public:
-        explicit ConstIterator(const_pointer ptr = nullptr)
-        :ptr_ {ptr}
-        {}
-
-        const_reference operator*()  const noexcept {return *ptr_;}
-        const_pointer   operator->() const noexcept {return ptr_;}
-
-        ConstIterator& operator++()
-        {
-            ptr_++;
-            return *this;
-        }
-
-        ConstIterator operator++(int)
-        {
-            ConstIterator tmp {*this};
-            ++(*this);
-            return tmp;
-        }
-        
-        ConstIterator& operator--()
-        {
-            ptr_--;
-            return *this;
-        }
-
-        ConstIterator operator--(int)
-        {
-            ConstIterator tmp {*this};
-            --(*this);
-            return tmp;
-        }
-
-        ConstIterator& operator+=(const difference_type& rhs)
-        {
-            ptr_ += rhs;
-            return *this;
-        }
-
-        ConstIterator& operator-=(const difference_type& rhs)
-        {
-            ptr_ -= rhs;
-            return *this;
-        }
-
-        const_reference operator[](const difference_type& diff) const
-        {
-            return *(ConstIterator{*this} += diff);
-        }
-
-        std::strong_ordering operator<=>(const ConstIterator& rhs) const = default;
-
-        difference_type operator-(const ConstIterator& rhs) const
-        {
-            return ptr_ - rhs.ptr_;
-        }
-
-        ConstIterator operator+(const difference_type& diff) const
-        {
-            return (ConstIterator{*this} += diff);
-        }
-
-        ConstIterator operator-(const difference_type& diff) const
-        {
-            return (ConstIterator{*this} -= diff);
-        }
-
-        friend ConstIterator operator+(const difference_type& diff, const ConstIterator& itr)
-        {
-            return itr + diff;
-        }
-    }; // class ConstIterator
-
+    using Iterator      = typename detail::ContiguousIterator<value_type>;
+    using ConstIterator = typename detail::ContiguousIterator<const value_type>;
+    
     Iterator begin() {return Iterator{data_};}
-    Iterator end()   {return Iterator{data_ + size_};}
+    Iterator end()   {return Iterator{data_ + used_};}
 
     ConstIterator begin() const {return ConstIterator{data_};}
-    ConstIterator end()   const {return ConstIterator{data_ + size_};}
+    ConstIterator end()   const {return ConstIterator{data_ + used_};}
 
     ConstIterator cbegin() const {return ConstIterator{data_};}
-    ConstIterator cend()   const {return ConstIterator{data_ + size_};}
+    ConstIterator cend()   const {return ConstIterator{data_ + used_};}
 }; // class Vector
 
 } // namespace Container
