@@ -47,10 +47,24 @@ class RBSearchTree
         return {ptr, std::move(un_ptr)};
     }
 
+    node_ptr make_node(const key_type& key, Colors color, node_ptr parent = nullptr,
+    node_ptr left = nullptr, node_ptr right = nullptr)
+    {
+        key_type key_cpy = key;
+        return make_node(std::move(key_cpy), color, parent, left, right);
+    }
+
+    node_ptr make_node(key_type&& key, Colors color, node_ptr parent = nullptr,
+    node_ptr left = nullptr, node_ptr right = nullptr)
+    {
+        auto [node, un_ptr] = make_pair(std::move(key), color, parent, left, right);
+        node_map[node] = std::move(un_ptr);
+        return node;
+    }
+
     node_ptr null_init()
     {
-        auto [Null, un_ptr] = make_pair({}, Colors::Black);
-        node_map[Null] = std::move(un_ptr);
+        auto Null = make_node(key_type{}, Colors::Black);
         Null->left_   = Null;
         Null->right_  = Null;
         Null->parent_ = Null;
@@ -115,23 +129,17 @@ public:
 private:
     void insert_left(node_ptr this_current, node_ptr other_left)
     {
-        auto [left, un_ptr] = make_pair(other_left->key_, other_left->color_, this_current, Null_, Null_);
-        node_map[left] = std::move(un_ptr);
-        this_current->left_ = left;
+        this_current->left_ = make_node(other_left->key_, other_left->color_, this_current, Null_, Null_);
     }
 
     void insert_right(node_ptr this_current, node_ptr other_right)
     {
-        auto [right, un_ptr] = make_pair(other_right->key_, other_right->color_, this_current, Null_, Null_);
-        node_map[right] = std::move(un_ptr);
-        this_current->right_ = right;
+        this_current->right_ = make_node(other_right->key_, other_right->color_, this_current, Null_, Null_);
     }
 
     void insert_root(node_ptr other_root)
     {
-        auto [root, un_ptr] = make_pair(other_root->key_, other_root->color_, Null_, Null_, Null_);
-        node_map[root] = std::move(un_ptr);
-        root_ = root;
+        root_ = make_node(other_root->key_, other_root->color_, Null_, Null_, Null_);
     }
 
 public:
@@ -359,17 +367,9 @@ public:
         if (parent != Null_ && key_equal(parent->key_, key))
             return std::pair{Iterator{parent, Null_}, false};
 
-        node_ptr new_node = create_node(std::move(key), parent);
+        node_ptr new_node = make_node(std::move(key), Colors::Red, parent, Null_, Null_);
         insert_by_ptr(new_node);
         return std::pair{Iterator{new_node, Null_}, true};
-    }
-
-private:
-    node_ptr create_node(key_type&& key, node_ptr parent)
-    {
-        auto tmp = make_pair(std::move(key), Colors::Red, parent, Null_, Null_);
-        node_map.insert({const_cast<const node_ptr>(tmp.first), std::move(tmp.second)});
-        return tmp.first;
     }
 
 public:
