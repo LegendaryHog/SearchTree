@@ -124,13 +124,11 @@ TEST(Vector, mem_work)
         EXPECT_EQ(vec[i], 3);
 }
 
-
 TEST(Tree, default_ctor_and_one_key_ctor)
 {
     RBSearchTree tree0 {};
     RBSearchTree tree1 {15};
 }
-
 
 TEST(Tree, insert)
 {
@@ -169,7 +167,6 @@ TEST(Tree, Iterators)
     for (auto x: tree)
         EXPECT_EQ(x, arr[i++]);
 }
-
 
 int main(int argc, char **argv)
 {

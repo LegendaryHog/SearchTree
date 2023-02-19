@@ -1,54 +1,14 @@
 #pragma once
 #include <functional>
-#include <iterator>
 #include <fstream>
 #include <string>
 #include "vector.hpp"
+#include "node.hpp"
+#include "search_tree_iterator.hpp"
 
 namespace Container
 {
 
-namespace detail
-{
-enum class Colors
-{
-    Red,
-    Black,
-};
-
-template<typename KeyT = int>
-struct RBNode
-{
-    using key_type = KeyT;
-    using rbnode_ptr = RBNode*;   
-
-    key_type  key_ {};
-    Colors  color_  = Colors::Red;
-    rbnode_ptr parent_ = nullptr, left_ = nullptr, right_ = nullptr;
-
-    bool is_left_son()  const noexcept {return this == parent_->left_;}
-    bool is_right_son() const noexcept {return this == parent_->right_;}
-};
-
-// for sorted search tree
-template<typename KeyT>
-RBNode<KeyT>* find_min(RBNode<KeyT>* root, const RBNode<KeyT>* Null) noexcept
-{
-    RBNode<KeyT>* node = root;
-    for (node = root; node->left_ != Null; node = node->left_) {}
-    return node;
-}
-
-// for sorted search tree
-template<typename KeyT>
-RBNode<KeyT>* find_max(RBNode<KeyT>* root, const RBNode<KeyT>* Null) noexcept
-{
-    RBNode<KeyT>* node = root;
-    for (node = root; node->right_ != Null; node = node->right_) {}
-    return node;
-}
-
-} // namespace detail
 template<typename KeyT = int, typename Node = detail::RBNode<KeyT>, class Cmp = std::less<KeyT>>  
 class RBSearchTree
 {
@@ -276,189 +236,8 @@ private:
 
 //----------------------------------------=| Iterators start |=-----------------------------------------
 public:
-    class Iterator
-    {
-    public:
-        using iterator_category = typename std::bidirectional_iterator_tag;
-        using difference_type   = typename std::ptrdiff_t;
-        using value_type        = key_type;
-        using pointer           = key_type*;
-        using reference         = key_type&;
-    private:
-        node_ptr node_;
-        const_node_ptr Null_;
-
-    public:
-        Iterator(node_ptr node = nullptr, const_node_ptr Null = nullptr)
-        :node_ {node}, Null_ {Null}
-        {}
-
-        reference operator*() const
-        {
-            return node_->key_;
-        }
-
-        pointer operator->() const
-        {
-            return &(node_->key_);
-        }
-
-        Iterator& operator++()
-        {
-            if (node_->right_ != Null_)
-                node_ = detail::find_min(node_->right_, Null_);
-            else
-            {
-                auto parent = node_->parent_;
-
-                while (parent != Null_ && node_->is_right_son())
-                {
-                    node_ = parent;
-                    parent = parent->parent_;
-                }
-                node_ = parent;
-            }
-            return *this;
-        }
-
-        Iterator operator++(int)
-        {
-            auto cpy {*this};
-            ++(*this);
-            return cpy;
-        }
-
-        Iterator& operator--()
-        {
-            if (node_ == Null_)
-                node_ = Null_->right_;
-            else if (node_->left_ != Null_)
-                node_ = detail::find_max(node_->left, Null_);
-            else
-            {    
-                auto parent = node_->parent_;
-
-                while (parent != Null_ && node_->is_left_son())
-                {
-                    node_ = parent;
-                    parent = parent->parent_;
-                }
-                node_ = parent;
-            }
-            return *this;
-        }
-
-        Iterator operator--(int)
-        {
-            auto cpy {*this};
-            --(*this);
-            return cpy;
-        }
-
-        bool operator==(const Iterator& rhs) const
-        {
-            return node_ == rhs.node_;
-        }
-        
-        bool operator!=(const Iterator& rhs) const
-        {
-            return !(*this == rhs);
-        }
-
-        node_ptr get() const {return node_;}
-    }; // class Iterator
-
-    class ConstIterator
-    {
-    public:
-        using iterator_category = typename std::bidirectional_iterator_tag;
-        using difference_type   = typename std::ptrdiff_t;
-        using value_type        = key_type;
-        using const_pointer     = const key_type*;
-        using const_reference   = const key_type&;
-    private:
-        node_ptr node_;
-        const_node_ptr Null_;
-
-    public:
-        ConstIterator(node_ptr node = nullptr, const_node_ptr Null = nullptr)
-        :node_ {node}, Null_ {Null}
-        {}
-
-        const_reference operator*() const
-        {
-            return node_->key_;
-        }
-
-        const_pointer operator->() const
-        {
-            return &(node_->key_);
-        }
-
-        ConstIterator& operator++()
-        {
-            if (node_->right_ != Null_)
-                node_ = detail::find_min(node_->right_, Null_);
-            else
-            {
-                auto parent = node_->parent_;
-
-                while (parent != Null_ && node_->is_right_son())
-                {
-                    node_ = parent;
-                    parent = parent->parent_;
-                }
-                node_ = parent;
-            }
-            return *this;
-        }
-
-        ConstIterator operator++(int)
-        {
-            auto cpy {*this};
-            ++(*this);
-            return cpy;
-        }
-
-        ConstIterator& operator--()
-        {
-            if (node_ == Null_)
-                node_ = Null_->right_;
-            else if (node_->left_ != Null_)
-                node_ = detail::find_max(node_->left, Null_);
-            else
-            {    
-                auto parent = node_->parent_;
-
-                while (parent != Null_ && node_->is_left_son())
-                {
-                    node_ = parent;
-                    parent = parent->parent_;
-                }
-                node_ = parent;
-            }
-            return *this;
-        }
-
-        ConstIterator operator--(int)
-        {
-            auto cpy {*this};
-            --(*this);
-            return cpy;
-        }
-
-        bool operator==(const ConstIterator& rhs) const
-        {
-            return node_ == rhs.node_;
-        }
-        
-        bool operator!=(const ConstIterator& rhs) const
-        {
-            return !(*this == rhs);
-        }
-
-        node_ptr get() const {return node_;}
-    }; // class ConstIterator
+    using Iterator      = detail::SearchTreeIterator<key_type, node_type>;
+    using ConstIterator = detail::SearchTreeIterator<const key_type, node_type>;
 
     Iterator begin() {return Iterator{min_, Null_};}
     Iterator end()   {return Iterator{Null_};}
@@ -581,7 +360,6 @@ private:
             min_ = node;
         put_min_max_in_null();
     }
-
 
     void rb_insert_fix(node_ptr node) noexcept
     {
@@ -864,7 +642,7 @@ private:
 
         for (auto itr = cbegin(), end = cend(); itr != end; ++itr)
         {
-            node_ptr node = itr.get();
+            node_ptr node = itr.base();
             file << "Node_" << node << "[fillcolor=";
             if (node->color_ == Colors::Red)    
                 file << "red, fontcolor=black";
@@ -878,7 +656,7 @@ private:
         file << "edge[penwidth=3, color=black];" << std::endl;
         for (auto itr = cbegin(), end = cend(); itr != end; ++itr)
         {
-            node_ptr node = itr.get();
+            node_ptr node = itr.base();
             if (node->left_ != Null_)
                 file << "Node_" << node << ":left:s -> Node_" << node->left_ << ":_node_:n;" << std::endl;
             if (node->right_ != Null_)
