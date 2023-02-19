@@ -3,8 +3,8 @@
 #include <fstream>
 #include <string>
 #include "node.hpp"
-#include "vector.hpp"
 #include "search_tree_iterator.hpp"
+#include <unordered_map>
 
 namespace Container
 {
@@ -20,16 +20,41 @@ class RBSearchTree
     using size_type      = typename std::size_t;
     using Colors         = detail::Colors;
 
-    Vector<std::unique_ptr<node_type>> node_vector;
+    struct Hash
+    {
+        std::size_t operator()(node_ptr ptr) const
+        {
+            return reinterpret_cast<std::size_t>(ptr);
+        }
+    };
+
+    std::unordered_map<node_ptr, std::unique_ptr<node_type>, Hash> node_map;
+
+    std::pair<node_ptr, std::unique_ptr<node_type>>
+    make_pair(const key_type& key, Colors color,
+    node_ptr parent = nullptr, node_ptr left = nullptr, node_ptr right = nullptr)
+    {
+        auto key_cpy = key;
+        return make_pair(std::move(key_cpy), color, parent, left, right);
+    }
+
+    std::pair<node_ptr, std::unique_ptr<node_type>>
+    make_pair(key_type&& key, Colors color,
+    node_ptr parent = nullptr, node_ptr left = nullptr, node_ptr right = nullptr)
+    {
+        auto un_ptr = std::make_unique<node_type>(node_type{std::move(key), color, parent, left, right});
+        auto ptr = un_ptr.get();
+        return {ptr, std::move(un_ptr)};
+    }
 
     node_ptr null_init()
     {
-        node_vector.push_back(std::make_unique<node_type>(node_type{key_type{}, Colors::Black}));
-        auto& null_elem = node_vector[0];
-        null_elem->left_   = null_elem.get();
-        null_elem->right_  = null_elem.get();
-        null_elem->parent_ = null_elem.get();
-        return null_elem.get();
+        auto [Null, un_ptr] = make_pair({}, Colors::Black);
+        node_map[Null] = std::move(un_ptr);
+        Null->left_   = Null;
+        Null->right_  = Null;
+        Null->parent_ = Null;
+        return Null;
     }
 
     node_ptr Null_ = null_init(); // all of nullptr is replaced on Null_, for minimalize checking
@@ -90,20 +115,23 @@ public:
 private:
     void insert_left(node_ptr this_current, node_ptr other_left)
     {
-        node_vector.push_back(std::make_unique<node_type>(other_left->key_, other_left->color_, this_current, Null_, Null_));
-        this_current->left_ = node_vector.back().get();
+        auto [left, un_ptr] = make_pair(other_left->key_, other_left->color_, this_current, Null_, Null_);
+        node_map[left] = std::move(un_ptr);
+        this_current->left_ = left;
     }
 
     void insert_right(node_ptr this_current, node_ptr other_right)
     {
-        node_vector.push_back(std::make_unique<node_type>(other_right->key_, other_right->color_, this_current, Null_, Null_));
-        this_current->right_ = node_vector.back().get();
+        auto [right, un_ptr] = make_pair(other_right->key_, other_right->color_, this_current, Null_, Null_);
+        node_map[right] = std::move(un_ptr);
+        this_current->right_ = right;
     }
 
     void insert_root(node_ptr other_root)
     {
-        node_vector.push_back(std::make_unique<node_type>(other_root->key_, other_root->color_, Null_, Null_, Null_));
-        root_ = node_vector.back().get();
+        auto [root, un_ptr] = make_pair(other_root->key_, other_root->color_, Null_, Null_, Null_);
+        node_map[root] = std::move(un_ptr);
+        root_ = root;
     }
 
 public:
@@ -339,8 +367,9 @@ public:
 private:
     node_ptr create_node(key_type&& key, node_ptr parent)
     {
-        node_vector.push_back(std::make_unique<node_type>(node_type{std::move(key), Colors::Red, parent, Null_, Null_}));
-        return node_vector.back().get();
+        auto tmp = make_pair(std::move(key), Colors::Red, parent, Null_, Null_);
+        node_map.insert({const_cast<const node_ptr>(tmp.first), std::move(tmp.second)});
+        return tmp.first;
     }
 
 public:
@@ -497,7 +526,7 @@ public:
     }
 
     // delete z from tree with saving all invariants
-    void erase_by_ptr(node_ptr z)
+    void erase_from_tree(node_ptr z)
     {
         // declare two pointer, y - replacment for z in else case
         // x - root of subtree, where we need fix invarinats 
@@ -588,9 +617,6 @@ public:
             y->color_ = z->color_;
         }
 
-        // clear memory allocated on z node
-        delete z;
-
         // in first two cases ("if" and "else if")
         // if z had the Red color, then we cant broke any invarinats
         // in third case, if y was Red we cant broke any invarints too
@@ -598,9 +624,104 @@ public:
             rb_delete_fixup(x);
     }
 
+private:
     void rb_delete_fixup(node_ptr x) noexcept
     {
-        while (true) {}
+        while (x != root_ && x->color_ == Colors::Black)
+            if (x->is_left_son())
+            {
+                node_ptr w = x->parent_->right_;
+                if (w->color_ == Colors::Red)
+                {
+                    w->color_ = Colors::Black;
+                    x->parent_->color_ = Colors::Red;
+                    left_rotate(x->parent_);
+                    w = x->parent_->right_;
+                }
+                if (w->left_->color_ == Colors::Black && w->right_->color_ == Colors::Black)
+                {
+                    w->color_ == Colors::Red;
+                    x = x->parent;
+                }
+                else
+                {
+                    if (w->right_->color_ == Colors::Black)
+                    {
+                        w->left_->color_ = Colors::Black;
+                        w->color_ = Colors::Red;
+                        right_rotate(w);
+                        w = x->parent_->right_;
+                    }
+                    w->color_ = x->parent_->color_;
+                    x->parent_->color_ = Colors::Black;
+                    w->right_->color_ = Colors::Black;
+                    left_rotate(x->parent_);
+                    x = root_;
+                }
+            }
+            else
+            {
+                node_ptr w = x->parent_->left_;
+                if (w->color_ == Colors::Red)
+                {
+                    w->color_ = Colors::Black;
+                    x->parent_->color_ = Colors::Red;
+                    right_rotate(x->parent_);
+                    w = x->parent_->right_;
+                }
+                if (w->right_->color_ == Colors::Black && w->left_->color_ == Colors::Black)
+                {
+                    w->color_ == Colors::Red;
+                    x = x->parent;
+                }
+                else
+                {
+                    if (w->left_->color_ == Colors::Black)
+                    {
+                        w->right_->color_ = Colors::Black;
+                        w->color_ = Colors::Red;
+                        left_rotate(w);
+                        w = x->parent_->left_;
+                    }
+                    w->color_ = x->parent_->color_;
+                    x->parent_->color_ = Colors::Black;
+                    w->left_->color_ = Colors::Black;
+                    right_rotate(x->parent_);
+                    x = root_;
+                }
+            }
+        x->color_ = Colors::Black;
+    }
+
+public:
+    Iterator erase(Iterator itr)
+    {
+        auto itr_next = std::next(itr);
+        auto node = itr.base();
+        erase_from_tree(node);
+        node_map.erase(node);
+        return itr_next;
+    }
+
+    Iterator erase(ConstIterator itr)
+    {
+        return erase(Iterator{itr.base(), Null_});
+    }
+
+    Iterator erase(Iterator first, Iterator last)
+    {
+        Iterator ret {};
+        while (first != last)
+            ret = erase(first++);
+        return ret;
+    }
+
+    Iterator erase(ConstIterator first, ConstIterator last)
+    {
+        Iterator ret {};
+        while (first != last)
+            ret = erase(first++);
+        return ret;
     }
 //----------------------------------------=| Erase end |=-----------------------------------------------
 
