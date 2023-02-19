@@ -2,7 +2,6 @@
 #include <functional>
 #include <fstream>
 #include <string>
-#include "vector.hpp"
 #include "node.hpp"
 #include "search_tree_iterator.hpp"
 
@@ -20,14 +19,9 @@ class RBSearchTree
     using size_type      = typename std::size_t;
     using Colors         = detail::Colors;
 
-    Vector<node_type> vector {node_type{key_type{}, Colors::Black}};
-
     node_ptr null_init()
     {
-        vector[0].left_   = std::to_address(vector.begin());
-        vector[0].right_  = std::to_address(vector.begin());
-        vector[0].parent_ = std::to_address(vector.begin());
-        return std::to_address(vector.begin());
+        
     }
 
     node_ptr Null_ = null_init(); // all of nullptr is replaced on Null_, for minimalize checking
@@ -35,6 +29,8 @@ class RBSearchTree
     node_ptr root_ = Null_;
     node_ptr max_  = Null_;
     node_ptr min_  = Null_;
+
+    size_type size_ = 0;
 
     Cmp cmp {};
     bool key_less(const key_type& key1, const key_type& key2) const {return cmp(key1, key2);}
@@ -77,40 +73,37 @@ public:
 //----------------------------------------=| Ctors end |=-----------------------------------------------
 
 //----------------------------------------=| Size`s funcs start |=--------------------------------------
-    size_type size() const {return vector.size() - 1;}
+    size_type size() const {return size_;}
 
-    bool empty() const {return (vector.size() == 1);}
+    bool empty() const {return (size_ == 1);}
 //----------------------------------------=| Size`s funcs end |=----------------------------------------
 
 //----------------------------------------=| Big five start |=------------------------------------------
 private:
-    void push_node_left(node_ptr this_current, node_ptr other_left)
+    void insert_left(node_ptr this_current, node_ptr other_left)
     {
-        vector.push_back(node_type{other_left->key_, other_left->color_, this_current, Null_, Null_});
-        this_current->left_ = std::to_address(vector.end() - 1);
+        
     }
 
-    void push_node_right(node_ptr this_current, node_ptr other_right)
+    void insert_right(node_ptr this_current, node_ptr other_right)
     {
-        vector.push_back(node_type{other_right->key_, other_right->color_, this_current, Null_, Null_});
-        this_current->right_ = std::to_address(vector.end() - 1);
+        
     }
 
-    void push_root(node_ptr other_root)
+    void insert_root(node_ptr other_root)
     {
-        vector.push_back(node_type{other_root->key_, other_root->color_, Null_, Null_, Null_});
-        root_ = std::to_address(vector.end() - 1);
+        
     }
 
 public:
-    RBSearchTree(const RBSearchTree& other)
+    RBSearchTree(const RBSearchTree& other): size_ {other.size_}
     {
         auto root = Null_;
 
-        if (other.empty())
+        if (empty())
             return;
 
-        push_root(other.root_);
+        insert_root(other.root_);
         auto this_current  = root;
         auto other_current = other.root_;
 
@@ -118,13 +111,13 @@ public:
         {
             if (other_current->left_ != other.Null_ && this_current->left_ == Null_)
             {
-                push_node_left(this_current, other_current->left_);
+                insert_left(this_current, other_current->left_);
                 other_current = other_current->left_;
                 this_current = this_current->left_;
             }
             else if (other_current->right_ != other.Null_ && this_current->right == Null_)
             {
-                push_node_right(this_current, other_current->right_);
+                insert_right(this_current, other_current->right_);
                 other_current = other_current->right_;
                 this_current = this_current->right_;
             }
@@ -143,8 +136,7 @@ public:
 public:
     RBSearchTree(RBSearchTree&& other)          = default;
     RBSearchTree& operator=(RBSearchTree&& rhs) = default;
-
-
+    
     RBSearchTree& operator=(const RBSearchTree& rhs)
     {
         auto rhs_cpy {rhs};
@@ -335,8 +327,7 @@ public:
 
     node_ptr create_node(key_type&& key, node_ptr parent)
     {
-        vector.push_back(node_type{std::move(key), Colors::Red, parent, Null_, Null_});
-        return std::to_address(vector.end() - 1);
+        
     }
 
     template<std::input_iterator InpIt>
