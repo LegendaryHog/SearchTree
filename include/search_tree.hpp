@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include "node.hpp"
+#include "vector.hpp"
 #include "search_tree_iterator.hpp"
 
 namespace Container
@@ -19,9 +20,16 @@ class RBSearchTree
     using size_type      = typename std::size_t;
     using Colors         = detail::Colors;
 
+    Vector<std::unique_ptr<node_type>> node_vector;
+
     node_ptr null_init()
     {
-        
+        node_vector.push_back(std::make_unique<node_type>(node_type{key_type{}, Colors::Black}));
+        auto& null_elem = node_vector[0];
+        null_elem->left_   = null_elem.get();
+        null_elem->right_  = null_elem.get();
+        null_elem->parent_ = null_elem.get();
+        return null_elem.get();
     }
 
     node_ptr Null_ = null_init(); // all of nullptr is replaced on Null_, for minimalize checking
@@ -58,7 +66,7 @@ public:
 
     RBSearchTree(key_type&& key)
     {
-        insert(key);
+        insert(std::move(key));
     }
 
     template<std::input_iterator InpIt>
@@ -82,17 +90,20 @@ public:
 private:
     void insert_left(node_ptr this_current, node_ptr other_left)
     {
-        
+        node_vector.push_back(std::make_unique<node_type>(other_left->key_, other_left->color_, this_current, Null_, Null_));
+        this_current->left_ = node_vector.back().get();
     }
 
     void insert_right(node_ptr this_current, node_ptr other_right)
     {
-        
+        node_vector.push_back(std::make_unique<node_type>(other_right->key_, other_right->color_, this_current, Null_, Null_));
+        this_current->right_ = node_vector.back().get();
     }
 
     void insert_root(node_ptr other_root)
     {
-        
+        node_vector.push_back(std::make_unique<node_type>(other_root->key_, other_root->color_, Null_, Null_, Null_));
+        root_ = node_vector.back().get();
     }
 
 public:
@@ -136,7 +147,7 @@ public:
 public:
     RBSearchTree(RBSearchTree&& other)          = default;
     RBSearchTree& operator=(RBSearchTree&& rhs) = default;
-    
+
     RBSearchTree& operator=(const RBSearchTree& rhs)
     {
         auto rhs_cpy {rhs};
@@ -325,11 +336,14 @@ public:
         return std::pair{Iterator{new_node, Null_}, true};
     }
 
+private:
     node_ptr create_node(key_type&& key, node_ptr parent)
     {
-        
+        node_vector.push_back(std::make_unique<node_type>(node_type{std::move(key), Colors::Red, parent, Null_, Null_}));
+        return node_vector.back().get();
     }
 
+public:
     template<std::input_iterator InpIt>
     void insert(InpIt first, InpIt last)
     {
