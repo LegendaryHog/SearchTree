@@ -67,7 +67,7 @@ public:
         if (node_ == Null_)
             node_ = Null_->right_;
         else if (node_->left_ != Null_)
-            node_ = detail::find_max(node_->left, Null_);
+            node_ = detail::find_max(node_->left_, Null_);
         else
         {    
             auto parent = node_->parent_;

@@ -32,7 +32,7 @@ class RBSearchTree
 
     std::pair<node_ptr, std::unique_ptr<node_type>>
     make_pair(const key_type& key, Colors color,
-    node_ptr parent = nullptr, node_ptr left = nullptr, node_ptr right = nullptr)
+    node_ptr parent = nullptr, node_ptr left = nullptr, node_ptr right = nullptr) const
     {
         auto key_cpy = key;
         return make_pair(std::move(key_cpy), color, parent, left, right);
@@ -40,7 +40,7 @@ class RBSearchTree
 
     std::pair<node_ptr, std::unique_ptr<node_type>>
     make_pair(key_type&& key, Colors color,
-    node_ptr parent = nullptr, node_ptr left = nullptr, node_ptr right = nullptr)
+    node_ptr parent = nullptr, node_ptr left = nullptr, node_ptr right = nullptr) const
     {
         auto un_ptr = std::make_unique<node_type>(node_type{std::move(key), color, parent, left, right});
         auto ptr = un_ptr.get();
@@ -98,16 +98,6 @@ private:
 public:
     RBSearchTree() = default;
 
-    RBSearchTree(const key_type& key)
-    {
-        insert(key);
-    }
-
-    RBSearchTree(key_type&& key)
-    {
-        insert(std::move(key));
-    }
-
     template<std::input_iterator InpIt>
     RBSearchTree(InpIt first, InpIt last)
     {   
@@ -145,13 +135,11 @@ private:
 public:
     RBSearchTree(const RBSearchTree& other): size_ {other.size_}
     {
-        auto root = Null_;
-
         if (empty())
             return;
 
         insert_root(other.root_);
-        auto this_current  = root;
+        auto this_current  = root_;
         auto other_current = other.root_;
 
         while (other_current != other.Null_)
@@ -162,7 +150,7 @@ public:
                 other_current = other_current->left_;
                 this_current = this_current->left_;
             }
-            else if (other_current->right_ != other.Null_ && this_current->right == Null_)
+            else if (other_current->right_ != other.Null_ && this_current->right_ == Null_)
             {
                 insert_right(this_current, other_current->right_);
                 other_current = other_current->right_;
@@ -301,6 +289,7 @@ public:
                 node = node->right_;
             else
                 return Iterator{node, Null_};
+        return end();
     }
 //----------------------------------------=| Find end |=------------------------------------------------
 
@@ -317,6 +306,8 @@ public:
             if (key_less(key, x->key_))
                 x = x->left_;
             // else turn right
+            else if (key_equal(key, x->key_))
+                return x;
             else
                 x = x->right_;
         }
@@ -343,6 +334,9 @@ public:
             put_min_max_in_null();
             return;
         }
+
+        // increment size
+        size_++;
         
         // insert new node in right place
         if (key_less(node->key_, node->parent_->key_))
@@ -355,8 +349,8 @@ public:
 
     std::pair<Iterator, bool> insert(const key_type& key)
     {
-        key_type cpy {key};
-        return insert(std::move(cpy));
+        key_type key_cpy {key};
+        return insert(std::move(key_cpy));
     }
 
     std::pair<Iterator, bool> insert(key_type&& key) noexcept
@@ -640,8 +634,8 @@ private:
                 }
                 if (w->left_->color_ == Colors::Black && w->right_->color_ == Colors::Black)
                 {
-                    w->color_ == Colors::Red;
-                    x = x->parent;
+                    w->color_ = Colors::Red;
+                    x = x->parent_;
                 }
                 else
                 {
@@ -667,12 +661,12 @@ private:
                     w->color_ = Colors::Black;
                     x->parent_->color_ = Colors::Red;
                     right_rotate(x->parent_);
-                    w = x->parent_->right_;
+                    w = x->parent_->left_;
                 }
                 if (w->right_->color_ == Colors::Black && w->left_->color_ == Colors::Black)
                 {
-                    w->color_ == Colors::Red;
-                    x = x->parent;
+                    w->color_ = Colors::Red;
+                    x = x->parent_;
                 }
                 else
                 {
@@ -706,6 +700,11 @@ public:
     Iterator erase(ConstIterator itr)
     {
         return erase(Iterator{itr.base(), Null_});
+    }
+
+    Iterator erase(const key_type& key)
+    {
+        return erase(find(key));
     }
 
     Iterator erase(Iterator first, Iterator last)
