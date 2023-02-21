@@ -529,7 +529,7 @@ public:
             u->parent_->left_ = v;
         else
             u->parent_->right_ = v;
-        u->parent_ = v->parent_;
+        v->parent_ = u->parent_;
     }
 
     // delete z from tree with saving all invariants

@@ -119,18 +119,11 @@ TEST(Tree, erase)
     RBSearchTree tree {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
     auto er1 = tree.erase(1);
-    std::cout << "null" << std::endl;
     EXPECT_EQ(*er1, 2);
-    std::cout << "half" << std::endl;
-    tree.debug_graph_dump("debug1");
     EXPECT_EQ(*tree.erase(er1), 3);
-
-    std::cout << "one" << std::endl;
 
     auto citr = tree.cbegin();
     EXPECT_EQ(*tree.erase(citr), 3);
-
-    std::cout << "two" << std::endl;
 
     RBSearchTree tree1 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
     auto itr1 = std::next(tree1.begin(), 6);
@@ -138,15 +131,11 @@ TEST(Tree, erase)
 
     EXPECT_EQ(*tree1.erase(itr1, itr2), 12);
 
-    std::cout << "three" << std::endl;
-
     RBSearchTree tree2 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-    auto itr3 = std::next(tree1.cbegin(), 6);
-    auto itr4 = std::next(tree1.cbegin(), 12);
+    auto citr1 = std::next(tree2.cbegin(), 6);
+    auto citr2 = std::next(tree2.cbegin(), 12);
 
-    EXPECT_EQ(*tree1.erase(itr3, itr4), 12);
-
-    std::cout << "four" << std::endl;
+    EXPECT_EQ(*tree2.erase(citr1, citr2), 12);
 }
 
 
