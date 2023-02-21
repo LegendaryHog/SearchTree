@@ -4,10 +4,9 @@
 
 using namespace Container;
 
-TEST(Tree, default_ctor_and_one_key_ctor)
+TEST(Tree, default_ctor)
 {
     RBSearchTree tree0 {};
-    RBSearchTree tree1 {15};
 }
 
 TEST(Tree, insert)
@@ -127,7 +126,7 @@ TEST(Tree, erase)
     EXPECT_EQ(*tree.erase(er1), 3);
 
     std::cout << "one" << std::endl;
-/*
+
     auto citr = tree.cbegin();
     EXPECT_EQ(*tree.erase(citr), 3);
 
@@ -148,7 +147,6 @@ TEST(Tree, erase)
     EXPECT_EQ(*tree1.erase(itr3, itr4), 12);
 
     std::cout << "four" << std::endl;
-*/
 }
 
 

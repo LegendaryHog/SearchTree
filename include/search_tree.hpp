@@ -20,51 +20,9 @@ class RBSearchTree
     using size_type      = typename std::size_t;
     using Colors         = detail::Colors;
 
-    struct Hash
-    {
-        std::size_t operator()(node_ptr ptr) const
-        {
-            return reinterpret_cast<std::size_t>(ptr);
-        }
-    };
-
-    std::unordered_map<node_ptr, std::unique_ptr<node_type>, Hash> node_map;
-
-    std::pair<node_ptr, std::unique_ptr<node_type>>
-    make_pair(const key_type& key, Colors color,
-    node_ptr parent = nullptr, node_ptr left = nullptr, node_ptr right = nullptr) const
-    {
-        auto key_cpy = key;
-        return make_pair(std::move(key_cpy), color, parent, left, right);
-    }
-
-    std::pair<node_ptr, std::unique_ptr<node_type>>
-    make_pair(key_type&& key, Colors color,
-    node_ptr parent = nullptr, node_ptr left = nullptr, node_ptr right = nullptr) const
-    {
-        auto un_ptr = std::make_unique<node_type>(node_type{std::move(key), color, parent, left, right});
-        auto ptr = un_ptr.get();
-        return {ptr, std::move(un_ptr)};
-    }
-
-    node_ptr make_node(const key_type& key, Colors color, node_ptr parent = nullptr,
-    node_ptr left = nullptr, node_ptr right = nullptr)
-    {
-        key_type key_cpy = key;
-        return make_node(std::move(key_cpy), color, parent, left, right);
-    }
-
-    node_ptr make_node(key_type&& key, Colors color, node_ptr parent = nullptr,
-    node_ptr left = nullptr, node_ptr right = nullptr)
-    {
-        auto [node, un_ptr] = make_pair(std::move(key), color, parent, left, right);
-        node_map[node] = std::move(un_ptr);
-        return node;
-    }
-
     node_ptr null_init()
     {
-        auto Null = make_node(key_type{}, Colors::Black);
+        auto Null = new node_type{key_type{}, Colors::Black};
         Null->left_   = Null;
         Null->right_  = Null;
         Null->parent_ = Null;
@@ -101,7 +59,9 @@ public:
     template<std::input_iterator InpIt>
     RBSearchTree(InpIt first, InpIt last)
     {   
-        insert(first, last);
+        RBSearchTree tmp {};
+        tmp.insert(first, last);
+        std::swap(*this, tmp);
     }
 
     RBSearchTree(std::initializer_list<key_type> initlist)
@@ -112,24 +72,45 @@ public:
 //----------------------------------------=| Size`s funcs start |=--------------------------------------
     size_type size() const {return size_;}
 
-    bool empty() const {return (size_ == 1);}
+    bool empty() const {return (size_ == 0);}
 //----------------------------------------=| Size`s funcs end |=----------------------------------------
 
 //----------------------------------------=| Big five start |=------------------------------------------
 private:
+    void swap(RBSearchTree& rhs) noexcept
+    {
+        std::swap(Null_, rhs.Null_);
+        std::swap(root_, rhs.root_);
+        std::swap(max_, rhs.max_);
+        std::swap(min_, rhs.min_);
+        std::swap(size_, rhs.size_);
+    }
+
+public:
+    RBSearchTree(RBSearchTree&& other)
+    {
+        swap(other);
+    }
+    RBSearchTree& operator=(RBSearchTree&& rhs)
+    {
+        swap(rhs);
+        return *this;
+    }
+
+private:
     void insert_left(node_ptr this_current, node_ptr other_left)
     {
-        this_current->left_ = make_node(other_left->key_, other_left->color_, this_current, Null_, Null_);
+        this_current->left_ = new node_type{other_left->key_, other_left->color_, this_current, Null_, Null_};
     }
 
     void insert_right(node_ptr this_current, node_ptr other_right)
     {
-        this_current->right_ = make_node(other_right->key_, other_right->color_, this_current, Null_, Null_);
+        this_current->right_ = new node_type{other_right->key_, other_right->color_, this_current, Null_, Null_};
     }
 
     void insert_root(node_ptr other_root)
     {
-        root_ = make_node(other_root->key_, other_root->color_, Null_, Null_, Null_);
+        root_ = new node_type{other_root->key_, other_root->color_, Null_, Null_, Null_};
     }
 
 public:
@@ -138,39 +119,39 @@ public:
         if (empty())
             return;
 
-        insert_root(other.root_);
-        auto this_current  = root_;
+        RBSearchTree tmp {std::move(*this)};
+
+        tmp.insert_root(other.root_);
+        auto tmp_current   = tmp.root_;
         auto other_current = other.root_;
 
         while (other_current != other.Null_)
         {
-            if (other_current->left_ != other.Null_ && this_current->left_ == Null_)
+            if (other_current->left_ != other.Null_ && tmp_current->left_ == tmp.Null_)
             {
-                insert_left(this_current, other_current->left_);
+                tmp.insert_left(tmp_current, other_current->left_);
                 other_current = other_current->left_;
-                this_current = this_current->left_;
+                tmp_current   = tmp_current->left_;
             }
-            else if (other_current->right_ != other.Null_ && this_current->right_ == Null_)
+            else if (other_current->right_ != other.Null_ && tmp_current->right_ == tmp.Null_)
             {
-                insert_right(this_current, other_current->right_);
+                tmp.insert_right(tmp_current, other_current->right_);
                 other_current = other_current->right_;
-                this_current = this_current->right_;
+                tmp_current   = tmp_current->right_;
             }
             else
             {
                 other_current = other_current->parent_;
-                this_current = this_current->parent_;
+                tmp_current   = tmp_current->parent_;
             }
         }
+
+        std::swap(*this, tmp);
         
         min_ = detail::find_min(root_, Null_);
         max_ = detail::find_max(root_, Null_);
         put_min_max_in_null();  
     }
-
-public:
-    RBSearchTree(RBSearchTree&& other)          = default;
-    RBSearchTree& operator=(RBSearchTree&& rhs) = default;
 
     RBSearchTree& operator=(const RBSearchTree& rhs)
     {
@@ -179,7 +160,39 @@ public:
         return *this;
     }
 
-    virtual ~RBSearchTree() = default;
+    virtual ~RBSearchTree()
+    {
+        if (empty())
+        {
+            delete Null_;
+            return;
+        }
+
+        auto current = root_;
+        while (current != Null_)
+        {
+            if (current->left_ != Null_)
+                current = current->left_;
+            else if (current->right_ != Null_)
+                current = current->right_;
+            else
+            {
+                auto parent = current->parent_;
+
+                if (current == root_)
+                    break;
+                else if (current->is_left_son())
+                    parent->left_ = Null_;
+                else
+                    parent->right_ = Null_;
+
+                delete current;
+                current = parent;
+            }
+        }
+        delete root_;
+        delete Null_;
+    }
 //----------------------------------------=| Big five end |=--------------------------------------------
 
 //----------------------------------------=| Algorithm funcs start |=-----------------------------------
@@ -361,7 +374,7 @@ public:
         if (parent != Null_ && key_equal(parent->key_, key))
             return std::pair{Iterator{parent, Null_}, false};
 
-        node_ptr new_node = make_node(std::move(key), Colors::Red, parent, Null_, Null_);
+        node_ptr new_node = new node_type{std::move(key), Colors::Red, parent, Null_, Null_};
         insert_by_ptr(new_node);
         return std::pair{Iterator{new_node, Null_}, true};
     }
@@ -380,7 +393,7 @@ public:
     }
 
 private:
-    void fix_min_max(node_ptr node) noexcept
+    void insert_fix_min_max(node_ptr node) noexcept
     {
         if (key_less(max_->key_, node->key_))
             max_ = node;
@@ -392,7 +405,7 @@ private:
     void rb_insert_fix(node_ptr node) noexcept
     {
         // fix min and max pointers
-        fix_min_max(node);
+        insert_fix_min_max(node);
         // if parent color is Black of all invariants holds
         while (node->parent_->color_ == Colors::Red)
             // if parent is right son of grandparent
@@ -522,6 +535,8 @@ public:
     // delete z from tree with saving all invariants
     void erase_from_tree(node_ptr z)
     {
+        // decrement size
+        size_--;
         // declare two pointer, y - replacment for z in else case
         // x - root of subtree, where we need fix invarinats 
         node_ptr y = z, x = Null_;
@@ -593,7 +608,6 @@ public:
                 x->parent_ = y;
             else
             {
-
                 // replace y with right subtree of y
                 // after this x->parent_ will have correct value
                 transplant(y, y->right_);
@@ -614,11 +628,21 @@ public:
         // in first two cases ("if" and "else if")
         // if z had the Red color, then we cant broke any invarinats
         // in third case, if y was Red we cant broke any invarints too
-        if (y_original_color == Colors::Black)
-            rb_delete_fixup(x);
+        //if (y_original_color == Colors::Black)
+        //    rb_delete_fixup(x);
+        delete_fix_min_max(z);
     }
 
 private:
+    void delete_fix_min_max(node_ptr node)
+    {
+        if (node == min_)
+            min_ = detail::find_min(root_, Null_);
+        else if (node == max_)
+            max_ = detail::find_max(root_, Null_);
+        put_min_max_in_null();
+    }
+
     void rb_delete_fixup(node_ptr x) noexcept
     {
         while (x != root_ && x->color_ == Colors::Black)
@@ -687,13 +711,16 @@ private:
         x->color_ = Colors::Black;
     }
 
+
 public:
     Iterator erase(Iterator itr)
     {
+        if (itr == end())
+            return end();
         auto itr_next = std::next(itr);
         auto node = itr.base();
         erase_from_tree(node);
-        node_map.erase(node);
+        delete node;
         return itr_next;
     }
 
