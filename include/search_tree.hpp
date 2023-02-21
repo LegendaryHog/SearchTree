@@ -29,12 +29,8 @@ class RBSearchTree
         return Null;
     }
 
-    node_ptr Null_ = null_init(); // all of nullptr is replaced on Null_, for minimalize checking
-
-    node_ptr root_ = Null_;
-    node_ptr max_  = Null_;
-    node_ptr min_  = Null_;
-
+    node_ptr  Null_ = null_init(); // all of nullptr is replaced on Null_, for minimalize checking
+    node_ptr  root_ = Null_;
     size_type size_ = 0;
 
     Cmp cmp {};
@@ -42,14 +38,6 @@ class RBSearchTree
     bool key_equal(const key_type& key1, const key_type& key2) const
     {
         return !cmp(key1, key2) && !cmp(key2, key1);
-    }
-
-// sub func
-private:
-    void put_min_max_in_null()
-    {
-        Null_->left_  = min_;
-        Null_->right_ = max_;
     }
 
 //----------------------------------------=| Ctors start |=---------------------------------------------
@@ -73,6 +61,9 @@ public:
     size_type size() const {return size_;}
 
     bool empty() const {return (size_ == 0);}
+
+    const key_type& minimum() const {return Null_->left_->key_;}
+    const key_type& maximum() const {return Null_->right_->key_;} 
 //----------------------------------------=| Size`s funcs end |=----------------------------------------
 
 //----------------------------------------=| Big five start |=------------------------------------------
@@ -81,8 +72,6 @@ private:
     {
         std::swap(Null_, rhs.Null_);
         std::swap(root_, rhs.root_);
-        std::swap(max_, rhs.max_);
-        std::swap(min_, rhs.min_);
         std::swap(size_, rhs.size_);
     }
 
@@ -148,9 +137,8 @@ public:
 
         std::swap(*this, tmp);
         
-        min_ = detail::find_min(root_, Null_);
-        max_ = detail::find_max(root_, Null_);
-        put_min_max_in_null();  
+        Null_->left_  = detail::find_min(root_, Null_);
+        Null_->right_ = detail::find_max(root_, Null_);
     }
 
     RBSearchTree& operator=(const RBSearchTree& rhs)
@@ -279,13 +267,13 @@ public:
     using Iterator      = detail::SearchTreeIterator<key_type, node_type>;
     using ConstIterator = detail::SearchTreeIterator<const key_type, node_type>;
 
-    Iterator begin() {return Iterator{min_, Null_};}
-    Iterator end()   {return Iterator{Null_};}
+    Iterator begin() {return Iterator{Null_->left_, Null_};}
+    Iterator end()   {return Iterator{Null_, Null_};}
 
-    ConstIterator begin() const {return ConstIterator{min_, Null_};}
+    ConstIterator begin() const {return ConstIterator{Null_->left_, Null_};}
     ConstIterator end()   const {return ConstIterator{Null_, Null_};}
 
-    ConstIterator cbegin() const {return ConstIterator{min_, Null_};}
+    ConstIterator cbegin() const {return ConstIterator{Null_->left_, Null_};}
     ConstIterator cend()   const {return ConstIterator{Null_, Null_};}
 
 //----------------------------------------=| Iterators end |=-------------------------------------------
@@ -335,6 +323,9 @@ public:
         assert(node->left_ == Null_);
         assert(node->right_ == Null_);
 
+        // increment size
+        size_++;
+
         // if tree is empty
         if (node->parent_ == Null_)
         {
@@ -342,14 +333,10 @@ public:
             root_ = node;
             root_->color_ = Colors::Black;
             // upadte min and max
-            min_ = root_;
-            max_ = root_;
-            put_min_max_in_null();
+            Null_->left_  = root_;
+            Null_->right_ = root_;
             return;
         }
-
-        // increment size
-        size_++;
         
         // insert new node in right place
         if (key_less(node->key_, node->parent_->key_))
@@ -395,11 +382,10 @@ public:
 private:
     void insert_fix_min_max(node_ptr node) noexcept
     {
-        if (key_less(max_->key_, node->key_))
-            max_ = node;
-        if (key_less(node->key_, min_->key_))
-            min_ = node;
-        put_min_max_in_null();
+        if (key_less(Null_->right_->key_, node->key_))
+            Null_->right_ = node;
+        if (key_less(node->key_, Null_->left_->key_))
+            Null_->left_ = node;
     }
 
     void rb_insert_fix(node_ptr node) noexcept
@@ -628,19 +614,18 @@ public:
         // in first two cases ("if" and "else if")
         // if z had the Red color, then we cant broke any invarinats
         // in third case, if y was Red we cant broke any invarints too
-        //if (y_original_color == Colors::Black)
-        //    rb_delete_fixup(x);
+        if (y_original_color == Colors::Black)
+            rb_delete_fixup(x);
         delete_fix_min_max(z);
     }
 
 private:
     void delete_fix_min_max(node_ptr node)
     {
-        if (node == min_)
-            min_ = detail::find_min(root_, Null_);
-        else if (node == max_)
-            max_ = detail::find_max(root_, Null_);
-        put_min_max_in_null();
+        if (node == Null_->left_)
+            Null_->left_ = detail::find_min(root_, Null_);
+        if (node == Null_->right_)
+            Null_->right_ = detail::find_max(root_, Null_);
     }
 
     void rb_delete_fixup(node_ptr x) noexcept
@@ -751,6 +736,48 @@ public:
     }
 //----------------------------------------=| Erase end |=-----------------------------------------------
 
+//----------------------------------------=| Bounds start |=--------------------------------------------
+node_ptr lower_bound_ptr(const key_type& key)
+{
+    node_ptr result = Null_, current = root_;
+    while (current != Null_)
+    {
+        if (!key_less(current->key_, key))
+        {
+            result = current;
+            current = current->left_;
+        }
+        else
+            current = current->right_;
+    }
+    return result;
+}
+
+node_ptr upper_bound_ptr(const key_type& key)
+{
+    node_ptr result = Null_, current = root_;
+    while (current != Null_)
+    {
+        if (key_less(key, current->key_))
+        {
+            result = current;
+            current = current->left_;
+        }
+        else
+            current = current->right_;
+    }
+    return result;
+}
+
+Iterator      lower_bound(const key_type& key)       {return Iterator{lower_bound_ptr(key), Null_};}
+
+ConstIterator lower_bound(const key_type& key) const {return ConstIterator{lower_bound_ptr(key), Null_};}
+
+Iterator      upper_bound(const key_type& key)       {return Iterator{upper_bound_ptr(key), Null_};}
+
+ConstIterator upper_bound(const key_type& key) const {return ConstIterator{upper_bound_ptr(key), Null_};}
+//----------------------------------------=| Bounds end |=----------------------------------------------
+
 //----------------------------------------=| Graph dump start |=----------------------------------------
 #ifdef DEBUG
 public:  
@@ -774,9 +801,7 @@ private:
     void descriptor_dump(std::fstream& file) const
     {
         file << "\tTree [fillcolor=purple, label = \"{ RBSearchTree\\ndescriptor| size: " << size() << "| <root> root:\\n " << root_
-        << "| min:\\n " << min_  << "\\n min key: " << min_->key_
-        << "| max:\\n " << max_ << "\\n max key: " << max_->key_ <<
-        "| <null> Null:\\n " << Null_ << "}\"];" << std::endl;
+        << "| min key: " << minimum() << "| max key: " << maximum() << "| <null> Null:\\n " << Null_ << "}\"];" << std::endl;
     }
 
     void null_dump(std::fstream& file) const

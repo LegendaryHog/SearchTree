@@ -63,15 +63,43 @@ TEST(Tree, Iterators)
 
     std::array<int, 8> arr {-2, 1, 2, 4, 5, 6, 7, 9};
 
-    RBSearchTree tree {1, 2, 4, 7, 9, -2, 5, 6};
+    RBSearchTree tree1 {1, 2, 4, 7, 9, -2, 5, 6};
     std::size_t i = 0;
-    for (auto x: tree)
+    for (auto x: tree1)
         EXPECT_EQ(x, arr[i++]);
 
     const RBSearchTree ctree {1, 2, 4, 7, 9, -2, 5, 6};
     i = 0;
-    for (auto x: tree)
+    for (auto x: ctree)
         EXPECT_EQ(x, arr[i++]);
+
+    std::cout << "null" << std::endl;
+
+    RBSearchTree tree {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    EXPECT_EQ(11, *std::prev(tree.end()));
+    EXPECT_EQ(11, *std::prev(tree.cend()));
+
+    std::cout << "first" << std::endl;
+    
+    auto itr  = tree.begin();
+    auto citr = tree.cbegin();
+    EXPECT_EQ(*itr++, 0);
+    EXPECT_EQ(*citr++, 0);
+    EXPECT_EQ(*itr, 1);
+    EXPECT_EQ(*citr, 1);
+    EXPECT_EQ(*++itr, 2);
+    EXPECT_EQ(*++citr, 2);
+    EXPECT_EQ(*itr--, 2);
+    EXPECT_EQ(*citr--, 2);
+    EXPECT_EQ(*itr, 1);
+    EXPECT_EQ(*citr, 1);
+    EXPECT_EQ(*--itr, 0);
+    EXPECT_EQ(*--citr, 0);
+
+    std::cout << "second" << std::endl;
+
+    EXPECT_EQ(std::next(tree.begin(), 5), std::prev(tree.end(), 7));
+    EXPECT_EQ(std::distance(tree.begin(), tree.end()), tree.size());
 }
 
 
@@ -138,9 +166,11 @@ TEST(Tree, erase)
     EXPECT_EQ(*tree2.erase(citr1, citr2), 12);
 }
 
+TEST(Tree, bounds)
+
 
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
-}
+}    
