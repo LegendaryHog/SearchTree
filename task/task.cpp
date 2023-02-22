@@ -4,15 +4,14 @@ using namespace Task;
 
 std::vector<Input> Task::scan_input()
 {
-    char query_type {};
+    char req_type {};
     int key = 0;
     Action act;
 
     std::vector<Input> requests;
-    while (std::cin >> query_type >> key)
+    while (std::cin >> req_type >> key)
     {
-        std::cerr << "in while\n";
-        switch (query_type)
+        switch (req_type)
         {
             case 'k':
                 act = Action::InsertKey;
@@ -26,9 +25,7 @@ std::vector<Input> Task::scan_input()
             default:
                 break;
         }
-        std::cerr << "push\n";
         requests.push_back(Input{act, key});
     }
-    std::cerr << "after while\n";
     return requests;
 }

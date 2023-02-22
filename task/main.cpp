@@ -4,9 +4,7 @@ using namespace Task;
 
 int main()
 {
-    std::cerr << "scan start\n";
     auto requests = scan_input();
-    std::cerr << "scan end\n";
     Container::RBSearchTree set {};
     for (auto req: requests)
         switch (req.act_)
