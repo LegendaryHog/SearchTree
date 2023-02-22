@@ -167,7 +167,21 @@ TEST(Tree, erase)
 }
 
 TEST(Tree, bounds)
+{
+    RBSearchTree tree {-5, -4, -3, 6, 8, 9, 10, 11, 15, 17};
 
+    EXPECT_EQ(*tree.upper_bound(-4), -3);
+    EXPECT_EQ(*tree.upper_bound(6), 8);
+    EXPECT_EQ(*tree.upper_bound(7), 8);
+    EXPECT_EQ(*tree.upper_bound(13), 15);
+    EXPECT_EQ(*tree.upper_bound(15), 17);
+
+    EXPECT_EQ(*tree.lower_bound(-5), -5);
+    EXPECT_EQ(*tree.lower_bound(0), 6);
+    EXPECT_EQ(*tree.lower_bound(-4), -4);
+    EXPECT_EQ(*tree.lower_bound(6), 6);
+    EXPECT_EQ(*tree.lower_bound(7), 8);
+}
 
 int main(int argc, char **argv)
 {

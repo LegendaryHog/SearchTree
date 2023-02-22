@@ -97,13 +97,6 @@ bool operator==(const SearchTreeIterator<KeyT, Node>& lhs, const SearchTreeItera
 {
     return (lhs.base() == rhs.base());
 }
-
-template<typename KeyT, typename Node>
-bool operator!=(const SearchTreeIterator<KeyT, Node>& lhs, const SearchTreeIterator<KeyT, Node>& rhs)
-{
-    return (lhs.base() != rhs.base());
-}
-
 } // namespace detail
 
 } // namespace Container

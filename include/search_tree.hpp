@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <fstream>
+#include <cassert>
 #include <string>
 #include "node.hpp"
 #include "search_tree_iterator.hpp"
@@ -294,6 +295,8 @@ public:
     }
 //----------------------------------------=| Find end |=------------------------------------------------
 
+//----------------------------------------=| Insert start |=--------------------------------------------
+private:
     node_ptr find_parent(const key_type& key) const noexcept
     {
         auto x = root_;
@@ -315,7 +318,6 @@ public:
         return y;
     }
 
-//----------------------------------------=| Insert start |=--------------------------------------------
     void insert_by_ptr(node_ptr node) noexcept
     {
         assert(node != nullptr);
@@ -347,6 +349,7 @@ public:
         rb_insert_fix(node);
     }
 
+public:
     std::pair<Iterator, bool> insert(const key_type& key)
     {
         key_type key_cpy {key};
@@ -366,7 +369,6 @@ public:
         return std::pair{Iterator{new_node, Null_}, true};
     }
 
-public:
     template<std::input_iterator InpIt>
     void insert(InpIt first, InpIt last)
     {
@@ -505,7 +507,7 @@ private:
 //----------------------------------------=| Insert end |=----------------------------------------------
 
 //----------------------------------------=| Erase start |=---------------------------------------------
-public:
+private:
     // replace subtree with root u with subtree with root v
     void transplant(node_ptr u, node_ptr v) noexcept
     {
@@ -569,10 +571,10 @@ public:
         |*  / \   / \        /  \     \                  / \   |
         |*       ~       1             zr      2        ~      |
         |*      /      ---->          /  \   ---->     /       |
-        |*     y                     /                yr       | 
-        |*      \                   yr               /  \      |
-        |*       \                 /  \                        |
-        |*        yr                                           |
+        |*     y                     ~                yr       | 
+        |*      \                   /                /  \      |
+        |*       \                 yr                          |
+        |*        yr              /  \                         |
         |*       /  \                                          | 
         |* ____________________________________________________|
         \*/
@@ -737,45 +739,45 @@ public:
 //----------------------------------------=| Erase end |=-----------------------------------------------
 
 //----------------------------------------=| Bounds start |=--------------------------------------------
-node_ptr lower_bound_ptr(const key_type& key)
-{
-    node_ptr result = Null_, current = root_;
-    while (current != Null_)
+private:
+    node_ptr lower_bound_ptr(const key_type& key)
     {
-        if (!key_less(current->key_, key))
-        {
-            result = current;
-            current = current->left_;
-        }
-        else
-            current = current->right_;
-    }
-    return result;
-}
+        node_ptr result = Null_, current = root_;
+        while (current != Null_)
+            if (!key_less(current->key_, key))
+            {
+                result = current;
+                current = current->left_;
+            }
+            else
+                current = current->right_;
 
-node_ptr upper_bound_ptr(const key_type& key)
-{
-    node_ptr result = Null_, current = root_;
-    while (current != Null_)
+        return result;
+    }
+
+    node_ptr upper_bound_ptr(const key_type& key)
     {
-        if (key_less(key, current->key_))
-        {
-            result = current;
-            current = current->left_;
-        }
-        else
-            current = current->right_;
+        node_ptr result = Null_, current = root_;
+        while (current != Null_)
+            if (key_less(key, current->key_))
+            {
+                result = current;
+                current = current->left_;
+            }
+            else
+                current = current->right_;
+
+        return result;
     }
-    return result;
-}
 
-Iterator      lower_bound(const key_type& key)       {return Iterator{lower_bound_ptr(key), Null_};}
+public:
+    Iterator      lower_bound(const key_type& key)       {return Iterator{lower_bound_ptr(key), Null_};}
 
-ConstIterator lower_bound(const key_type& key) const {return ConstIterator{lower_bound_ptr(key), Null_};}
+    ConstIterator lower_bound(const key_type& key) const {return ConstIterator{lower_bound_ptr(key), Null_};}
 
-Iterator      upper_bound(const key_type& key)       {return Iterator{upper_bound_ptr(key), Null_};}
+    Iterator      upper_bound(const key_type& key)       {return Iterator{upper_bound_ptr(key), Null_};}
 
-ConstIterator upper_bound(const key_type& key) const {return ConstIterator{upper_bound_ptr(key), Null_};}
+    ConstIterator upper_bound(const key_type& key) const {return ConstIterator{upper_bound_ptr(key), Null_};}
 //----------------------------------------=| Bounds end |=----------------------------------------------
 
 //----------------------------------------=| Graph dump start |=----------------------------------------
