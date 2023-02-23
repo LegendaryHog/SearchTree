@@ -366,7 +366,7 @@ public:
         return insert(std::move(key_cpy));
     }
 
-    virtual std::pair<Iterator, bool> insert(key_type&& key) noexcept
+    std::pair<Iterator, bool> insert(key_type&& key) noexcept
     {
         auto parent = find_parent(key);
 
@@ -518,13 +518,10 @@ private:
 //----------------------------------------=| Insert end |=----------------------------------------------
 
 //----------------------------------------=| Erase start |=---------------------------------------------
-protected:
-    virtual void action_before_transplant(node_ptr u, node_ptr v) {} 
 private:
     // replace subtree with root u with subtree with root v
     void transplant(node_ptr u, node_ptr v) noexcept
     {
-        action_before_transplant(u, v);
         if (u == root_)
             root_ = v;
         else if (u->is_left_son())

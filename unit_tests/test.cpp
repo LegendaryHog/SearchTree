@@ -173,8 +173,13 @@ TEST(Tree, bounds)
 TEST(BoostSet, Insert)
 {
     BoostSet set {1, 2, 3, 4, 5, 6, 7, 8};
+    set.insert(9);
     set.debug_graph_dump("dump");
+    
+    BoostSet set_cpy {set};
+    set.debug_graph_dump("dumpcpy");
 }
+
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);

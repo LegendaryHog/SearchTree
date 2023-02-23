@@ -25,23 +25,24 @@ template<typename KeyT = int, class Cmp = std::less<KeyT>>
 class BoostSet : public RBSearchTree<KeyT, detail::RBSubTreeRoot<KeyT>, Cmp>
 {
     using base = RBSearchTree<KeyT, detail::RBSubTreeRoot<KeyT>, Cmp>;
-    using node_ptr  = typename base::node_ptr;
-    using node_type = typename base::node_type;
-    using key_type  = KeyT;
-    using Colors    = typename  base::Colors;
-    using Iterator      = typename base::Iterator;
-    using ConstIterator = typename base::ConstIterator;
+    using typename base::node_ptr;
+    using typename base::node_type;
+    using typename base::key_type;
+    using typename base::Colors;
+    using typename base::Iterator;
+    using typename base::ConstIterator;
     
     using base::Null_;
     using base::root_;
     using base::size_;
+
 public:
     BoostSet(): base::RBSearchTree() {}
     
     template<std::input_iterator InpIt>
-    BoostSet(InpIt first, InpIt last): base::RBSearchTree(first, last) {}
+    BoostSet(InpIt first, InpIt last) {base::insert(first, last);}
 
-    BoostSet(std::initializer_list<key_type> initlist): base::RBSearchTree(initlist) {}
+    BoostSet(std::initializer_list<key_type> initlist): BoostSet{initlist.begin(), initlist.end()} {}
 
 protected:
     void insert_left(node_ptr this_current, node_ptr other_left) override
@@ -61,8 +62,8 @@ protected:
 
     void action_after_left_rotate(node_ptr x, node_ptr y) override
     {
-        x->size_ = x->left_->size_ + x->right_->size_;
-        y->size_ = y->left_->size_ + y->right_->size_;
+        x->size_ = x->left_->size_ + x->right_->size_ + 1;
+        y->size_ = y->left_->size_ + y->right_->size_ + 1;
     }
 
     void action_after_right_rotate(node_ptr x, node_ptr y) override
@@ -71,7 +72,7 @@ protected:
         y->size_ = y->left_->size_ + y->right_->size_;
     }
 private:
-    void increment_parents_size(node_ptr parent)
+    void increment_parents_size(node_ptr parent) const
     {
         for (;parent != Null_; parent = parent->parent_)
             parent->size_++;
@@ -80,9 +81,8 @@ private:
 protected:
     void action_before_insert(node_ptr new_node) override
     {
-        std::cerr << "post shit\n";
-        new_node->size_ = 1;
-        increment_parents_size(new_node->parent_);
+        new_node->size_++;
+        increment_parents_size(new_node->parent_);   
     }
 
     void dump_node(std::fstream& file, node_ptr node) const override
