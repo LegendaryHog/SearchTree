@@ -22,9 +22,9 @@ struct RBSubTreeRoot
 } // namespace detail
 
 template<typename KeyT = int, class Cmp = std::less<KeyT>>
-class BoostSet : public RBSearchTree<KeyT, detail::RBSubTreeRoot<KeyT>, Cmp>
+class BoostSet : public RBSearchTree<KeyT, Cmp, detail::RBSubTreeRoot<KeyT>>
 {
-    using base = RBSearchTree<KeyT, detail::RBSubTreeRoot<KeyT>, Cmp>;
+    using base = RBSearchTree<KeyT, Cmp, detail::RBSubTreeRoot<KeyT>>;
     using typename base::node_ptr;
     using typename base::node_type;
     using typename base::key_type;

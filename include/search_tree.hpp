@@ -10,7 +10,7 @@
 namespace Container
 {
 
-template<typename KeyT = int, typename Node = detail::RBNode<KeyT>, class Cmp = std::less<KeyT>>  
+template<typename KeyT = int, class Cmp = std::less<KeyT>, typename Node = detail::RBNode<KeyT>>  
 class RBSearchTree
 {
 protected:
