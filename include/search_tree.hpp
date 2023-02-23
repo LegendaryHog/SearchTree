@@ -13,6 +13,7 @@ namespace Container
 template<typename KeyT = int, typename Node = detail::RBNode<KeyT>, class Cmp = std::less<KeyT>>  
 class RBSearchTree
 {
+protected:
     using node_type      = Node;
     using node_ptr       = Node*;
     using const_node_ptr = const node_type*;
@@ -21,6 +22,7 @@ class RBSearchTree
     using size_type      = typename std::size_t;
     using Colors         = detail::Colors;
 
+private:
     node_ptr null_init()
     {
         auto Null = new node_type{key_type{}, Colors::Black};
@@ -30,6 +32,7 @@ class RBSearchTree
         return Null;
     }
 
+protected:
     node_ptr  Null_ = null_init(); // all of nullptr is replaced on Null_, for minimalize checking
     node_ptr  root_ = Null_;
     size_type size_ = 0;
@@ -87,18 +90,18 @@ public:
         return *this;
     }
 
-private:
-    void insert_left(node_ptr this_current, node_ptr other_left)
+protected:
+    virtual void insert_left(node_ptr this_current, node_ptr other_left)
     {
         this_current->left_ = new node_type{other_left->key_, other_left->color_, this_current, Null_, Null_};
     }
 
-    void insert_right(node_ptr this_current, node_ptr other_right)
+    virtual void insert_right(node_ptr this_current, node_ptr other_right)
     {
         this_current->right_ = new node_type{other_right->key_, other_right->color_, this_current, Null_, Null_};
     }
 
-    void insert_root(node_ptr other_root)
+    virtual void insert_root(node_ptr other_root)
     {
         root_ = new node_type{other_root->key_, other_root->color_, Null_, Null_, Null_};
     }
@@ -109,7 +112,7 @@ public:
         if (empty())
             return;
 
-        RBSearchTree tmp {std::move(*this)};
+        auto tmp {std::move(*this)};
 
         tmp.insert_root(other.root_);
         auto tmp_current   = tmp.root_;
@@ -185,6 +188,9 @@ public:
 //----------------------------------------=| Big five end |=--------------------------------------------
 
 //----------------------------------------=| Algorithm funcs start |=-----------------------------------
+protected:
+    virtual void action_after_left_rotate(node_ptr x, node_ptr y)  {}
+    virtual void action_after_right_rotate(node_ptr x, node_ptr y) {}
 private:
     /*\_________________________________________________
     |*                                                  |
@@ -217,7 +223,7 @@ private:
             root_ = y;
         // if x were left son of parent,
         // then y is new left son
-        else if (x == x->parent_->left_)
+        else if (x->is_left_son())
             x->parent_->left_ = y;
         // else x were right son of parent,
         // then y is new right son
@@ -228,6 +234,7 @@ private:
         y->left_ = x;
         // parent of x is y now
         x->parent_ = y;
+        action_after_left_rotate(x, y);
     }
 
     /*\_________________________________________________
@@ -260,6 +267,7 @@ private:
 
         y->right_  = x;
         x->parent_ = y;
+        action_after_right_rotate(x, y);
     }
 //----------------------------------------=| Algorithm funcs end |=-------------------------------------
 
@@ -296,6 +304,8 @@ public:
 //----------------------------------------=| Find end |=------------------------------------------------
 
 //----------------------------------------=| Insert start |=--------------------------------------------
+protected:
+    virtual void action_before_insert(node_ptr new_node) {}
 private:
     node_ptr find_parent(const key_type& key) const noexcept
     {
@@ -356,7 +366,7 @@ public:
         return insert(std::move(key_cpy));
     }
 
-    std::pair<Iterator, bool> insert(key_type&& key) noexcept
+    virtual std::pair<Iterator, bool> insert(key_type&& key) noexcept
     {
         auto parent = find_parent(key);
 
@@ -365,6 +375,7 @@ public:
             return std::pair{Iterator{parent, Null_}, false};
 
         node_ptr new_node = new node_type{std::move(key), Colors::Red, parent, Null_, Null_};
+        action_before_insert(new_node);
         insert_by_ptr(new_node);
         return std::pair{Iterator{new_node, Null_}, true};
     }
@@ -507,10 +518,13 @@ private:
 //----------------------------------------=| Insert end |=----------------------------------------------
 
 //----------------------------------------=| Erase start |=---------------------------------------------
+protected:
+    virtual void action_before_transplant(node_ptr u, node_ptr v) {} 
 private:
     // replace subtree with root u with subtree with root v
     void transplant(node_ptr u, node_ptr v) noexcept
     {
+        action_before_transplant(u, v);
         if (u == root_)
             root_ = v;
         else if (u->is_left_son())
@@ -811,7 +825,20 @@ private:
         file << "Null_" << "[fillcolor=navy, label = \"{Null node | ptr:\\n " << Null_ << "| {min:\\n " << Null_->left_ <<
         "| max:\\n " << Null_->right_ << "}}\"];" << std::endl;
     }
+protected:
+    virtual void dump_node(std::fstream& file, node_ptr node) const
+    {
+        file << "Node_" << node << "[fillcolor=";
+        if (node->color_ == Colors::Red)    
+            file << "red, fontcolor=black";
+        else
+            file << "black, color=red";
+            
+        file << ", label = \"{<_node_>ptr:\\n " << node << "| parent:\\n " << node->parent_ << "| key: " << node->key_
+        << "| {<left>left:\\n " << node->left_ << "| <right>right:\\n " << node->right_ << "}}\"];" << std::endl;
+    }
 
+private:
     void tree_dump(std::fstream& file) const
     {
         if (empty())
@@ -820,17 +847,7 @@ private:
         null_dump(file);
 
         for (auto itr = cbegin(), end = cend(); itr != end; ++itr)
-        {
-            node_ptr node = itr.base();
-            file << "Node_" << node << "[fillcolor=";
-            if (node->color_ == Colors::Red)    
-                file << "red, fontcolor=black";
-            else
-                file << "black, color=red";
-            
-            file << ", label = \"{<_node_>ptr:\\n " << node << "| parent:\\n " << node->parent_ << "| key: " << node->key_
-                << "| {<left>left:\\n " << node->left_ << "| <right>right:\\n " << node->right_ << "}}\"];" << std::endl;
-        }
+            dump_node(file, itr.base());
 
         file << "edge[penwidth=3, color=black];" << std::endl;
         for (auto itr = cbegin(), end = cend(); itr != end; ++itr)

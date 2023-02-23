@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #define DEBUG
 #include "search_tree.hpp"
+#include "task_tree.hpp"
 
 using namespace Container;
 
@@ -73,14 +74,10 @@ TEST(Tree, Iterators)
     for (auto x: ctree)
         EXPECT_EQ(x, arr[i++]);
 
-    std::cout << "null" << std::endl;
-
     RBSearchTree tree {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     EXPECT_EQ(11, *std::prev(tree.end()));
     EXPECT_EQ(11, *std::prev(tree.cend()));
 
-    std::cout << "first" << std::endl;
-    
     auto itr  = tree.begin();
     auto citr = tree.cbegin();
     EXPECT_EQ(*itr++, 0);
@@ -96,8 +93,6 @@ TEST(Tree, Iterators)
     EXPECT_EQ(*--itr, 0);
     EXPECT_EQ(*--citr, 0);
 
-    std::cout << "second" << std::endl;
-
     EXPECT_EQ(std::next(tree.begin(), 5), std::prev(tree.end(), 7));
     EXPECT_EQ(std::distance(tree.begin(), tree.end()), tree.size());
 }
@@ -107,14 +102,6 @@ TEST(Tree, big_five)
 {
     RBSearchTree tree1 {1, 2, 3, 4, -10, 5, 8, 9, 11};
     auto tree2 {tree1};
-
-    for (auto x: tree1)
-        std::cout << x << " ";
-    std::cout << std::endl;
-
-    for (auto x: tree2)
-        std::cout << x << " ";
-    std::cout << std::endl;
 
     EXPECT_EQ(tree1.size(), tree2.size());
     
@@ -183,6 +170,11 @@ TEST(Tree, bounds)
     EXPECT_EQ(*tree.lower_bound(7), 8);
 }
 
+TEST(BoostSet, Insert)
+{
+    BoostSet set {1, 2, 3, 4, 5, 6, 7, 8};
+    set.debug_graph_dump("dump");
+}
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
