@@ -18,6 +18,75 @@ struct RBSubTreeRoot
 
     bool is_left_son()  const noexcept {return this == parent_->left_;}
     bool is_right_son() const noexcept {return this == parent_->right_;}
+
+    void copy_left(node_ptr new_node, node_ptr other, node_ptr Null)
+    {
+        left_ = new_node;
+        new_node->parent_ = this;
+
+        new_node->key_ = other->key_;
+        new_node->color_ = other->color_;
+        new_node->left_ = Null;
+        new_node->right_ = Null;
+    }
+
+    void copy_right(node_ptr new_node, node_ptr other, node_ptr Null)
+    {
+        right_ = new_node;
+        new_node->parent_ = this;
+
+        new_node->key_ = other->key_;
+        new_node->color_ = other->color_;
+        new_node->left_ = Null;
+        new_node->right_ = Null;
+    }
+
+    void init_data(node_ptr other, node_ptr Null)
+    {
+        key_   = other->key_;
+        color_ = other->color_;
+
+        parent_ = Null;
+        left_   = Null;
+        right_  = Null;
+    }
+
+    void dump(std::fstream& file) const
+    {
+        file << "Node_" << this << "[fillcolor=";
+        if (color_ == Colors::Red)    
+            file << "red, fontcolor=black";
+        else
+            file << "black, color=red";
+            
+        file << ", label = \"{<_node_>ptr:\\n " << this << "| parent:\\n " << parent_ << "| key: " << key_
+        << "| size: " << size_ << "| {<left>left:\\n " << left_
+        << "| <right>right:\\n " << right_ << "}}\"];" << std::endl;
+    }
+
+private:
+    void recalc_size()
+    {
+        size_ = left_->size_ + right_->size_ + 1;
+    }
+public:
+    void action_after_left_rotate(node_ptr Null)
+    {
+        right_->recalc_size();
+        recalc_size();
+    }
+
+    void action_after_right_rotate(node_ptr Null) 
+    {
+        left_->recalc_size();
+        recalc_size();
+    }
+
+    void action_before_insert(node_ptr Null)
+    {
+        for (auto node = parent_; node != Null; node = node->parent_)
+            node->size_++;
+    }
 };
 } // namespace detail
 
@@ -43,59 +112,5 @@ public:
     BoostSet(InpIt first, InpIt last) {base::insert(first, last);}
 
     BoostSet(std::initializer_list<key_type> initlist): BoostSet{initlist.begin(), initlist.end()} {}
-
-protected:
-    void insert_left(node_ptr this_current, node_ptr other_left) override
-    {
-        this_current->left_ = new node_type{other_left->key_, other_left->color_, this_current, Null_, Null_, other_left->size_};
-    }
-
-    void insert_right(node_ptr this_current, node_ptr other_right) override
-    {
-        this_current->right_ = new node_type{other_right->key_, other_right->color_, this_current, Null_, Null_, other_right->size_};
-    }
-
-    void insert_root(node_ptr other_root) override
-    {
-        root_ = new node_type{other_root->key_, other_root->color_, Null_, Null_, Null_, other_root->size_};
-    }
-
-    void action_after_left_rotate(node_ptr x, node_ptr y) override
-    {
-        x->size_ = x->left_->size_ + x->right_->size_ + 1;
-        y->size_ = y->left_->size_ + y->right_->size_ + 1;
-    }
-
-    void action_after_right_rotate(node_ptr x, node_ptr y) override
-    {
-        x->size_ = x->left_->size_ + x->right_->size_;
-        y->size_ = y->left_->size_ + y->right_->size_;
-    }
-private:
-    void increment_parents_size(node_ptr parent) const
-    {
-        for (;parent != Null_; parent = parent->parent_)
-            parent->size_++;
-    }
-
-protected:
-    void action_before_insert(node_ptr new_node) override
-    {
-        new_node->size_++;
-        increment_parents_size(new_node->parent_);   
-    }
-
-    void dump_node(std::fstream& file, node_ptr node) const override
-    {
-        file << "Node_" << node << "[fillcolor=";
-        if (node->color_ == Colors::Red)    
-            file << "red, fontcolor=black";
-        else
-            file << "black, color=red";
-            
-        file << ", label = \"{<_node_>ptr:\\n " << node << "| parent:\\n " << node->parent_ << "| key: " << node->key_
-        << "| size: " << node->size_ << "| {<left>left:\\n " << node->left_
-        << "| <right>right:\\n " << node->right_ << "}}\"];" << std::endl;
-    }
 };
 } // namespace Container

@@ -95,45 +95,29 @@ public:
         return *this;
     }
 
-protected:
-    virtual void insert_left(node_ptr this_current, node_ptr other_left)
-    {
-        this_current->left_ = new node_type{other_left->key_, other_left->color_, this_current, Null_, Null_};
-    }
-
-    virtual void insert_right(node_ptr this_current, node_ptr other_right)
-    {
-        this_current->right_ = new node_type{other_right->key_, other_right->color_, this_current, Null_, Null_};
-    }
-
-    virtual void insert_root(node_ptr other_root)
-    {
-        root_ = new node_type{other_root->key_, other_root->color_, Null_, Null_, Null_};
-    }
-
 public:
     RBSearchTree(const RBSearchTree& other): size_ {other.size_}
     {
         if (empty())
             return;
 
-        auto tmp {std::move(*this)};
+        RBSearchTree tmp {std::move(*this)};
 
-        tmp.insert_root(other.root_);
+        tmp.root_ = new node_type;
+        tmp.root_->init_data(other.root_, tmp.Null_);
         auto tmp_current   = tmp.root_;
         auto other_current = other.root_;
 
         while (other_current != other.Null_)
-        {
             if (other_current->left_ != other.Null_ && tmp_current->left_ == tmp.Null_)
             {
-                tmp.insert_left(tmp_current, other_current->left_);
+                tmp_current->copy_left(new node_type, other_current->left_, tmp.Null_);
                 other_current = other_current->left_;
                 tmp_current   = tmp_current->left_;
             }
             else if (other_current->right_ != other.Null_ && tmp_current->right_ == tmp.Null_)
             {
-                tmp.insert_right(tmp_current, other_current->right_);
+                tmp_current->copy_right(new node_type, other_current->right_, tmp.Null_);
                 other_current = other_current->right_;
                 tmp_current   = tmp_current->right_;
             }
@@ -142,7 +126,6 @@ public:
                 other_current = other_current->parent_;
                 tmp_current   = tmp_current->parent_;
             }
-        }
 
         std::swap(*this, tmp);
         
@@ -193,9 +176,6 @@ public:
 //----------------------------------------=| Big five end |=--------------------------------------------
 
 //----------------------------------------=| Algorithm funcs start |=-----------------------------------
-protected:
-    virtual void action_after_left_rotate(node_ptr x, node_ptr y)  {}
-    virtual void action_after_right_rotate(node_ptr x, node_ptr y) {}
 private:
     /*\_________________________________________________
     |*                                                  |
@@ -239,7 +219,7 @@ private:
         y->left_ = x;
         // parent of x is y now
         x->parent_ = y;
-        action_after_left_rotate(x, y);
+        y->action_after_left_rotate(Null_);
     }
 
     /*\_________________________________________________
@@ -272,7 +252,7 @@ private:
 
         y->right_  = x;
         x->parent_ = y;
-        action_after_right_rotate(x, y);
+        y->action_after_right_rotate(Null_);
     }
 //----------------------------------------=| Algorithm funcs end |=-------------------------------------
 
@@ -373,7 +353,7 @@ public:
             return std::pair{ConstIterator{parent, Null_}, false};
 
         node_ptr new_node = new node_type{std::move(key), Colors::Red, parent, Null_, Null_};
-        action_before_insert(new_node);
+        new_node->action_before_insert(Null_);
         insert_by_ptr(new_node);
         return std::pair{ConstIterator{new_node, Null_}, true};
     }
@@ -807,18 +787,6 @@ private:
         file << "Null_" << "[fillcolor=navy, label = \"{Null node | ptr:\\n " << Null_ << "| {min:\\n " << Null_->left_ <<
         "| max:\\n " << Null_->right_ << "}}\"];" << std::endl;
     }
-protected:
-    virtual void dump_node(std::fstream& file, node_ptr node) const
-    {
-        file << "Node_" << node << "[fillcolor=";
-        if (node->color_ == Colors::Red)    
-            file << "red, fontcolor=black";
-        else
-            file << "black, color=red";
-            
-        file << ", label = \"{<_node_>ptr:\\n " << node << "| parent:\\n " << node->parent_ << "| key: " << node->key_
-        << "| {<left>left:\\n " << node->left_ << "| <right>right:\\n " << node->right_ << "}}\"];" << std::endl;
-    }
 
 private:
     void tree_dump(std::fstream& file) const
@@ -829,7 +797,7 @@ private:
         null_dump(file);
 
         for (auto itr = cbegin(), end = cend(); itr != end; ++itr)
-            dump_node(file, itr.base());
+            itr.base()->dump(file);
 
         file << "edge[penwidth=3, color=black];" << std::endl;
         for (auto itr = cbegin(), end = cend(); itr != end; ++itr)

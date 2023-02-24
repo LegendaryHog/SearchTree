@@ -101,8 +101,10 @@ TEST(Tree, Iterators)
 TEST(Tree, big_five)
 {
     RBSearchTree tree1 {1, 2, 3, 4, -10, 5, 8, 9, 11};
-    auto tree2 {tree1};
-
+    RBSearchTree tree2 {tree1};
+    tree1.debug_graph_dump("tree1");
+    tree2.debug_graph_dump("tree2");
+    
     EXPECT_EQ(tree1.size(), tree2.size());
     
     for (auto itr1 = tree1.cbegin(), itr2 = tree2.cbegin(),
