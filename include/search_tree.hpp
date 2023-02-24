@@ -21,6 +21,9 @@ protected:
     using reference      = key_type&;
     using size_type      = typename std::size_t;
     using Colors         = detail::Colors;
+public:
+    using ConstIterator = detail::SearchTreeIterator<const key_type, node_type>;
+    using Iterator = ConstIterator;
 
 private:
     node_ptr null_init()
@@ -64,11 +67,13 @@ public:
 //----------------------------------------=| Size`s funcs start |=--------------------------------------
     size_type size() const {return size_;}
 
-    bool empty() const {return (size_ == 0);}
-
-    const key_type& minimum() const {return Null_->left_->key_;}
-    const key_type& maximum() const {return Null_->right_->key_;} 
+    bool empty() const {return (size_ == 0);} 
 //----------------------------------------=| Size`s funcs end |=----------------------------------------
+
+//----------------------------------------=| Max/min methods start |=-----------------------------------
+    const key_type& maximum() const {return Null_->right_->key_;}
+    const key_type& minimum() const {return Null_->left_->key_;}
+//----------------------------------------=| Max/min methods end |=-------------------------------------
 
 //----------------------------------------=| Big five start |=------------------------------------------
 private:
@@ -271,25 +276,18 @@ private:
     }
 //----------------------------------------=| Algorithm funcs end |=-------------------------------------
 
-//----------------------------------------=| Iterators start |=-----------------------------------------
+//----------------------------------------=| begin/end start |=-----------------------------------------
 public:
-    using Iterator      = detail::SearchTreeIterator<key_type, node_type>;
-    using ConstIterator = detail::SearchTreeIterator<const key_type, node_type>;
-
-    Iterator begin() {return Iterator{Null_->left_, Null_};}
-    Iterator end()   {return Iterator{Null_, Null_};}
-
     ConstIterator begin() const {return ConstIterator{Null_->left_, Null_};}
     ConstIterator end()   const {return ConstIterator{Null_, Null_};}
 
     ConstIterator cbegin() const {return ConstIterator{Null_->left_, Null_};}
     ConstIterator cend()   const {return ConstIterator{Null_, Null_};}
-
-//----------------------------------------=| Iterators end |=-------------------------------------------
+//----------------------------------------=| begin/end end |=-------------------------------------------
 
 //----------------------------------------=| Find start |=----------------------------------------------
 public:
-    Iterator find(const key_type& key)
+    ConstIterator find(const key_type& key)
     {
         node_ptr node = root_;
         while (node != Null_)
@@ -298,7 +296,7 @@ public:
             else if (key_less(node->key_, key))
                 node = node->right_;
             else
-                return Iterator{node, Null_};
+                return ConstIterator{node, Null_};
         return end();
     }
 //----------------------------------------=| Find end |=------------------------------------------------
@@ -360,24 +358,24 @@ private:
     }
 
 public:
-    std::pair<Iterator, bool> insert(const key_type& key)
+    std::pair<ConstIterator, bool> insert(const key_type& key)
     {
         key_type key_cpy {key};
         return insert(std::move(key_cpy));
     }
 
-    std::pair<Iterator, bool> insert(key_type&& key) noexcept
+    std::pair<ConstIterator, bool> insert(key_type&& key) noexcept
     {
         auto parent = find_parent(key);
 
         // if key is alredy in tree
         if (parent != Null_ && key_equal(parent->key_, key))
-            return std::pair{Iterator{parent, Null_}, false};
+            return std::pair{ConstIterator{parent, Null_}, false};
 
         node_ptr new_node = new node_type{std::move(key), Colors::Red, parent, Null_, Null_};
         action_before_insert(new_node);
         insert_by_ptr(new_node);
-        return std::pair{Iterator{new_node, Null_}, true};
+        return std::pair{ConstIterator{new_node, Null_}, true};
     }
 
     template<std::input_iterator InpIt>
@@ -711,7 +709,7 @@ private:
 
 
 public:
-    Iterator erase(Iterator itr)
+    ConstIterator erase(ConstIterator itr)
     {
         if (itr == end())
             return end();
@@ -722,27 +720,14 @@ public:
         return itr_next;
     }
 
-    Iterator erase(ConstIterator itr)
-    {
-        return erase(Iterator{itr.base(), Null_});
-    }
-
-    Iterator erase(const key_type& key)
+    ConstIterator erase(const key_type& key)
     {
         return erase(find(key));
     }
 
-    Iterator erase(Iterator first, Iterator last)
+    ConstIterator erase(ConstIterator first, ConstIterator last)
     {
-        Iterator ret {};
-        while (first != last)
-            ret = erase(first++);
-        return ret;
-    }
-
-    Iterator erase(ConstIterator first, ConstIterator last)
-    {
-        Iterator ret {};
+        ConstIterator ret {};
         while (first != last)
             ret = erase(first++);
         return ret;
@@ -782,11 +767,11 @@ private:
     }
 
 public:
-    Iterator      lower_bound(const key_type& key)       {return Iterator{lower_bound_ptr(key), Null_};}
+    ConstIterator      lower_bound(const key_type& key)       {return ConstIterator{lower_bound_ptr(key), Null_};}
 
     ConstIterator lower_bound(const key_type& key) const {return ConstIterator{lower_bound_ptr(key), Null_};}
 
-    Iterator      upper_bound(const key_type& key)       {return Iterator{upper_bound_ptr(key), Null_};}
+    ConstIterator      upper_bound(const key_type& key)       {return ConstIterator{upper_bound_ptr(key), Null_};}
 
     ConstIterator upper_bound(const key_type& key) const {return ConstIterator{upper_bound_ptr(key), Null_};}
 //----------------------------------------=| Bounds end |=----------------------------------------------
