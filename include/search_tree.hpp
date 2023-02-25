@@ -138,7 +138,7 @@ public:
     RBSearchTree& operator=(const RBSearchTree& rhs)
     {
         auto rhs_cpy {rhs};
-        std::swap(*this, rhs);
+        std::swap(*this, rhs_cpy);
         return *this;
     }
 

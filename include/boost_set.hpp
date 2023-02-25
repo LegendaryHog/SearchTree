@@ -42,20 +42,17 @@ public:
     using base::upper_bound;
     using base::debug_graph_dump;
 
-    const key_type& operator[](size_type index) const
+    const key_type& operator[](size_type index) const noexcept
     {
         node_ptr current = root_;
         while (current->left_->size_ != index)
             if (current->left_ != Null_ && index < current->left_->size_)
                 current = current->left_;
-            else if (current->right_ != Null_ && index > current->left_->size_)
+            else
             {
                 index  -= current->left_->size_ + 1;
                 current = current->right_;
             }
-            else
-                throw std::out_of_range{"try to get access on element out of container"};
-
         return current->key_;
     }
 };

@@ -170,15 +170,40 @@ TEST(Tree, bounds)
     EXPECT_EQ(*tree.lower_bound(7), 8);
 }
 
-TEST(BoostSet, Insert)
+TEST(BoostSet, big_five_and_insert)
 {
-    BoostSet set {1, 2, 3, 4, 5, 6, 7, 8};
+    BoostSet set {1, 2, 3, 4, 5, 6, 7, 8, 12, 34, -7, -9, 15, 3};
     set.insert(9);
-    set.debug_graph_dump("dump");
     
+    // copy ctor
     BoostSet set_cpy {set};
-    for (int i = 0; i < 9; i++)
-        EXPECT_EQ(set[i], i + 1);
+    EXPECT_EQ(set.size(), set_cpy.size());
+    for (auto itr = set.begin(), itr_cpy = set_cpy.begin(), end = set.end(), end_cpy = set_cpy.end();
+        itr != end && itr_cpy != end_cpy; ++itr, ++itr_cpy)
+        EXPECT_EQ(*itr, *itr_cpy);
+
+    BoostSet set_cpy1 {1, 2, 3};
+    set_cpy1 = set;
+    EXPECT_EQ(set.size(), set_cpy1.size());
+    for (auto itr = set.begin(), itr_cpy1 = set_cpy1.begin(), end = set.end(), end_cpy1 = set_cpy1.end();
+        itr != end && itr_cpy1 != end_cpy1; ++itr, ++itr_cpy1)
+        EXPECT_EQ(*itr, *itr_cpy1);
+
+
+    // move ctor
+    BoostSet set_move {std::move(set_cpy)};
+    EXPECT_EQ(set.size(), set_move.size());
+    for (auto itr = set.begin(), itr_move = set_move.begin(), end = set.end(), end_move = set_move.end();
+        itr != end && itr_move != end_move; ++itr, ++itr_move)
+        EXPECT_EQ(*itr, *itr_move);
+
+    // move assign
+    BoostSet set_move1 {1, 2, 3};
+    set_move1 = std::move(set_move);
+    EXPECT_EQ(set.size(), set_move1.size());
+    for (auto itr = set.begin(), itr_move1 = set_move1.begin(), end = set.end(), end_move1 = set_move1.end();
+        itr != end && itr_move1 != end_move1; ++itr, ++itr_move1)
+        EXPECT_EQ(*itr, *itr_move1);
 }
 
 int main(int argc, char **argv)
