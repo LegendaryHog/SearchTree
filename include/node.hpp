@@ -1,16 +1,10 @@
 #pragma once
+#include "colors.hpp"
 
 namespace Container
 {
 namespace detail
 {
-
-enum class Colors
-{
-    Red,
-    Black,
-};
-
 template<typename KeyT = int>
 struct RBNode
 {

@@ -1,6 +1,5 @@
 #pragma once
 #include <iterator>
-#include "node.hpp"
 
 namespace Container
 {

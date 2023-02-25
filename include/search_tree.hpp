@@ -10,7 +10,9 @@
 namespace Container
 {
 
-template<typename KeyT = int, class Cmp = std::less<KeyT>, typename Node = detail::RBNode<KeyT>>  
+namespace detail
+{
+template<typename KeyT = int, class Cmp = std::less<KeyT>, typename Node = RBNode<KeyT>>  
 class RBSearchTree
 {
 protected:
@@ -20,8 +22,8 @@ protected:
     using key_type       = KeyT;
     using reference      = key_type&;
     using size_type      = typename std::size_t;
-    using Colors         = detail::Colors;
-public:
+    using Colors         = Colors;
+protected:
     using ConstIterator = detail::SearchTreeIterator<const key_type, node_type>;
     using Iterator = ConstIterator;
 
@@ -41,6 +43,7 @@ protected:
     size_type size_ = 0;
 
     Cmp cmp {};
+private:
     bool key_less(const key_type& key1, const key_type& key2) const {return cmp(key1, key2);}
     bool key_equal(const key_type& key1, const key_type& key2) const
     {
@@ -95,7 +98,6 @@ public:
         return *this;
     }
 
-public:
     RBSearchTree(const RBSearchTree& other): size_ {other.size_}
     {
         if (empty())
@@ -140,7 +142,7 @@ public:
         return *this;
     }
 
-    virtual ~RBSearchTree()
+    ~RBSearchTree()
     {
         if (empty())
         {
@@ -150,7 +152,6 @@ public:
 
         auto current = root_;
         while (current != Null_)
-        {
             if (current->left_ != Null_)
                 current = current->left_;
             else if (current->right_ != Null_)
@@ -169,7 +170,6 @@ public:
                 delete current;
                 current = parent;
             }
-        }
         delete root_;
         delete Null_;
     }
@@ -257,7 +257,7 @@ private:
 //----------------------------------------=| Algorithm funcs end |=-------------------------------------
 
 //----------------------------------------=| begin/end start |=-----------------------------------------
-public:
+protected:
     ConstIterator begin() const {return ConstIterator{Null_->left_, Null_};}
     ConstIterator end()   const {return ConstIterator{Null_, Null_};}
 
@@ -266,7 +266,7 @@ public:
 //----------------------------------------=| begin/end end |=-------------------------------------------
 
 //----------------------------------------=| Find start |=----------------------------------------------
-public:
+protected:
     ConstIterator find(const key_type& key)
     {
         node_ptr node = root_;
@@ -282,8 +282,6 @@ public:
 //----------------------------------------=| Find end |=------------------------------------------------
 
 //----------------------------------------=| Insert start |=--------------------------------------------
-protected:
-    virtual void action_before_insert(node_ptr new_node) {}
 private:
     node_ptr find_parent(const key_type& key) const noexcept
     {
@@ -337,7 +335,7 @@ private:
         rb_insert_fix(node);
     }
 
-public:
+protected:
     std::pair<ConstIterator, bool> insert(const key_type& key)
     {
         key_type key_cpy {key};
@@ -687,8 +685,7 @@ private:
         x->color_ = Colors::Black;
     }
 
-
-public:
+protected:
     ConstIterator erase(ConstIterator itr)
     {
         if (itr == end())
@@ -716,7 +713,7 @@ public:
 
 //----------------------------------------=| Bounds start |=--------------------------------------------
 private:
-    node_ptr lower_bound_ptr(const key_type& key)
+    node_ptr lower_bound_ptr(const key_type& key) const
     {
         node_ptr result = Null_, current = root_;
         while (current != Null_)
@@ -727,11 +724,10 @@ private:
             }
             else
                 current = current->right_;
-
         return result;
     }
 
-    node_ptr upper_bound_ptr(const key_type& key)
+    node_ptr upper_bound_ptr(const key_type& key) const 
     {
         node_ptr result = Null_, current = root_;
         while (current != Null_)
@@ -742,23 +738,16 @@ private:
             }
             else
                 current = current->right_;
-
         return result;
     }
 
-public:
-    ConstIterator      lower_bound(const key_type& key)       {return ConstIterator{lower_bound_ptr(key), Null_};}
-
+protected:
     ConstIterator lower_bound(const key_type& key) const {return ConstIterator{lower_bound_ptr(key), Null_};}
-
-    ConstIterator      upper_bound(const key_type& key)       {return ConstIterator{upper_bound_ptr(key), Null_};}
-
     ConstIterator upper_bound(const key_type& key) const {return ConstIterator{upper_bound_ptr(key), Null_};}
 //----------------------------------------=| Bounds end |=----------------------------------------------
 
 //----------------------------------------=| Graph dump start |=----------------------------------------
-#ifdef DEBUG
-public:  
+protected:  
     void debug_graph_dump(const std::string& filename) const
     {   
         std::fstream file {filename + ".dot", std::ofstream::out | std::ofstream::trunc};
@@ -787,8 +776,7 @@ private:
         file << "Null_" << "[fillcolor=navy, label = \"{Null node | ptr:\\n " << Null_ << "| {min:\\n " << Null_->left_ <<
         "| max:\\n " << Null_->right_ << "}}\"];" << std::endl;
     }
-
-private:
+    
     void tree_dump(std::fstream& file) const
     {
         if (empty())
@@ -812,8 +800,9 @@ private:
         file << "Tree:root:e -> Node_" << root_ << ":_node_:n;" << std::endl;
         file << "Tree:null:w -> Null_:n;" << std::endl;
     }
-#endif
 //----------------------------------------=| Graph dump end |=------------------------------------------
 }; // class RBSearchTree
+
+} // namespace detail
 
 } // namespace Container

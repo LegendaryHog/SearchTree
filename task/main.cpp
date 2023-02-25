@@ -5,7 +5,7 @@ using namespace Task;
 int main()
 {
     auto requests = scan_input();
-    Container::RBSearchTree set {};
+    Container::BoostSet set {};
     for (auto req: requests)
         switch (req.act_)
         {

@@ -1,5 +1,6 @@
-#include "search_tree.hpp"
-
+#pragma once
+#include "colors.hpp"
+#include <fstream>
 namespace Container
 {
 namespace detail
@@ -19,33 +20,36 @@ struct RBSubTreeRoot
     bool is_left_son()  const noexcept {return this == parent_->left_;}
     bool is_right_son() const noexcept {return this == parent_->right_;}
 
+private:
+    void copy_data(node_ptr other)
+    {
+        key_   = other->key_;
+        color_ = other->color_;
+        size_  = other->size_;
+    }
+
+public:
     void copy_left(node_ptr new_node, node_ptr other, node_ptr Null)
     {
         left_ = new_node;
-        new_node->parent_ = this;
-
-        new_node->key_ = other->key_;
-        new_node->color_ = other->color_;
-        new_node->left_ = Null;
-        new_node->right_ = Null;
+        left_->parent_ = this;
+        left_->copy_data(other);
+        left_->left_  = Null;
+        left_->right_ = Null;
     }
 
     void copy_right(node_ptr new_node, node_ptr other, node_ptr Null)
     {
         right_ = new_node;
         new_node->parent_ = this;
-
-        new_node->key_ = other->key_;
-        new_node->color_ = other->color_;
+        right_->copy_data(other);
         new_node->left_ = Null;
         new_node->right_ = Null;
     }
 
     void init_data(node_ptr other, node_ptr Null)
     {
-        key_   = other->key_;
-        color_ = other->color_;
-
+        copy_data(other);
         parent_ = Null;
         left_   = Null;
         right_  = Null;
@@ -72,45 +76,21 @@ private:
 public:
     void action_after_left_rotate(node_ptr Null)
     {
-        right_->recalc_size();
+        left_->recalc_size();
         recalc_size();
     }
 
     void action_after_right_rotate(node_ptr Null) 
     {
-        left_->recalc_size();
+        right_->recalc_size();
         recalc_size();
     }
 
     void action_before_insert(node_ptr Null)
     {
-        for (auto node = parent_; node != Null; node = node->parent_)
+        for (auto node = this; node != Null; node = node->parent_)
             node->size_++;
     }
 };
 } // namespace detail
-
-template<typename KeyT = int, class Cmp = std::less<KeyT>>
-class BoostSet : public RBSearchTree<KeyT, Cmp, detail::RBSubTreeRoot<KeyT>>
-{
-    using base = RBSearchTree<KeyT, Cmp, detail::RBSubTreeRoot<KeyT>>;
-    using typename base::node_ptr;
-    using typename base::node_type;
-    using typename base::key_type;
-    using typename base::Colors;
-    using typename base::Iterator;
-    using typename base::ConstIterator;
-    
-    using base::Null_;
-    using base::root_;
-    using base::size_;
-
-public:
-    BoostSet(): base::RBSearchTree() {}
-    
-    template<std::input_iterator InpIt>
-    BoostSet(InpIt first, InpIt last) {base::insert(first, last);}
-
-    BoostSet(std::initializer_list<key_type> initlist): BoostSet{initlist.begin(), initlist.end()} {}
-};
 } // namespace Container

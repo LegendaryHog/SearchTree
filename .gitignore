@@ -6,4 +6,5 @@ logs/
 *.png
 *.dot
 *.svg
+.vscode
 
