@@ -27,14 +27,10 @@ for i in range(2, len(sys.argv)):
     for j in range(-abs_max_key, abs_max_key):
         list_unique.append(j)
 
-    print('fill')
-    
     for _ in range(first_req_num):
         list.append((put_unique_key(list_unique), 'k'))
         num_of_ins += 1
 
-    print('first ins')
-    
     for _ in range(first_req_num, num_of_keys):
         request = random.randint(0, 2)
         if request == 0:
@@ -45,8 +41,6 @@ for i in range(2, len(sys.argv)):
         else:
             list.append((random.randint(-abs_max_key, abs_max_key), 'n'))
     
-    print('end generation')
-
     file = open(sys.argv[i], 'w')
     for i in range(len(list)):
         num, req = list[i]

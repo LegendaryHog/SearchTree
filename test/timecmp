@@ -16,6 +16,9 @@ do
     echo "boost:"
     time ./$boost <$3 >'boost_tmp'
     echo ""
+    echo "my_set:"
+    time ./$my_set <$3 >'my_set_tmp'
+    echo ""
     echo "std_set:"
     time ./$std_set <$3 >'std_set_tmp'
     echo ""
