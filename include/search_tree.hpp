@@ -43,7 +43,7 @@ protected:
     size_type size_ = 0;
 
     Cmp cmp {};
-private:
+
     bool key_less(const key_type& key1, const key_type& key2) const {return cmp(key1, key2);}
     bool key_equal(const key_type& key1, const key_type& key2) const
     {
@@ -801,8 +801,21 @@ private:
         file << "Tree:null:w -> Null_:n;" << std::endl;
     }
 //----------------------------------------=| Graph dump end |=------------------------------------------
-}; // class RBSearchTree
 
+//----------------------------------------=| equal_to start |=------------------------------------------
+protected:
+    bool equal_to(const RBSearchTree& other) const
+    {
+        if (size() != other.size())
+            return false;
+        
+        for (auto itr = cbegin(), other_itr = other.cbegin(), end = cend(); itr != end; ++itr, ++other_itr)
+            if (!key_equal(*itr, *other_itr))
+                return false;
+        return true;
+    }
+//----------------------------------------=| equal_to end |=--------------------------------------------
+}; // class RBSearchTree
 } // namespace detail
 
 } // namespace Container

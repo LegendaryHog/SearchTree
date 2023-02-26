@@ -6,81 +6,81 @@
 
 using namespace Container;
 
-TEST(Tree, default_ctor)
+TEST(Set, default_ctor)
 {
-    Set tree0 {};
+    Set set0 {};
 }
 
-TEST(Tree, insert)
+TEST(Set, insert)
 {
-    Set tree {};
+    Set set {};
     for (auto i = 0; i < 40; i++)
     {
         if (i % 2)
-            tree.insert(i);
+            set.insert(i);
         else
-            tree.insert(i + 20);
+            set.insert(i + 20);
     }
 
-    Set tree1 {12, 1, 4, 5, -4, 8, 7, -9};
-    Set tree2 {12, 1, 4, 5, -4, 8, 7, -9};
+    Set set1 {12, 1, 4, 5, -4, 8, 7, -9};
+    Set set2 {12, 1, 4, 5, -4, 8, 7, -9};
     std::array<int, 10> arr1 {2, 7, 12, 100, -12, 56, 10, 9, 11, 5};
     std::array<int, 15> res {-12, -9, -4, 1, 2, 4, 5, 7, 8, 9, 10, 11, 12, 56, 100};
 
     for (auto x: arr1)
-        tree1.insert(x);
+        set1.insert(x);
     
-    tree2.insert(arr1.cbegin(), arr1.cend());
+    set2.insert(arr1.cbegin(), arr1.cend());
 
     auto i = 0;
-    for (auto x: tree1)
+    for (auto x: set1)
         EXPECT_EQ(x, res[i++]);
 
     i = 0;
-    for (auto x: tree2)
+    for (auto x: set2)
         EXPECT_EQ(x, res[i++]);
 }
 
-TEST(Tree, init_list_and_cont_ctor)
+TEST(Set, init_list_and_cont_ctor)
 {
-    Set tree0 {1, -4, -2, 8, 9, -20, 10, 34, 17, 1, 1, 9, 17, 21};
+    Set set0 {1, -4, -2, 8, 9, -20, 10, 34, 17, 1, 1, 9, 17, 21};
     std::array<int, 14> arr {1, -4, -2, 8, 9, -20, 10, 34, 17, 1, 1, 9, 17, 21};
-    Set tree1 (arr.cbegin(), arr.cend());
+    Set set1 (arr.cbegin(), arr.cend());
     std::array<int, 10> res {-20, -4, -2, 1, 8, 9, 10, 17, 21, 34};
 
     auto i = 0;
-    for (auto x: tree0)
+    for (auto x: set0)
         EXPECT_EQ(x, res[i++]);
 
     i = 0;
-    for (auto x: tree1)
+    for (auto x: set1)
         EXPECT_EQ(x, res[i++]);
 
 }
 
-TEST(Tree, Iterators)
+TEST(Set, Iterators)
 {
     static_assert(std::bidirectional_iterator<Set<>::Iterator>);
     static_assert(std::bidirectional_iterator<Set<>::ConstIterator>);
 
     std::array<int, 8> arr {-2, 1, 2, 4, 5, 6, 7, 9};
 
-    Set tree1 {1, 2, 4, 7, 9, -2, 5, 6};
+    Set set1 {1, 2, 4, 7, 9, -2, 5, 6};
     std::size_t i = 0;
-    for (auto x: tree1)
+    for (auto x: set1)
         EXPECT_EQ(x, arr[i++]);
 
-    const Set ctree {1, 2, 4, 7, 9, -2, 5, 6};
+    const Set cset {1, 2, 4, 7, 9, -2, 5, 6};
     i = 0;
-    for (auto x: ctree)
+    for (auto x: cset)
         EXPECT_EQ(x, arr[i++]);
 
-    Set tree {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-    EXPECT_EQ(11, *std::prev(tree.end()));
-    EXPECT_EQ(11, *std::prev(tree.cend()));
+    Set set {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    EXPECT_EQ(11, *std::prev(set.end()));
+    EXPECT_EQ(11, *std::prev(set.cend()));
 
-    auto itr  = tree.begin();
-    auto citr = tree.cbegin();
+    auto itr  = set.begin();
+    auto citr = set.cbegin();
     EXPECT_EQ(*itr++, 0);
     EXPECT_EQ(*citr++, 0);
     EXPECT_EQ(*itr, 1);
@@ -94,116 +94,165 @@ TEST(Tree, Iterators)
     EXPECT_EQ(*--itr, 0);
     EXPECT_EQ(*--citr, 0);
 
-    EXPECT_EQ(std::next(tree.begin(), 5), std::prev(tree.end(), 7));
-    EXPECT_EQ(std::distance(tree.begin(), tree.end()), tree.size());
+    EXPECT_EQ(std::next(set.begin(), 5), std::prev(set.end(), 7));
+    EXPECT_EQ(std::distance(set.begin(), set.end()), set.size());
 }
 
-TEST(Tree, big_five)
+TEST(Set, equal_to)
 {
-    Set tree1 {1, 2, 3, 4, -10, 5, 8, 9, 11};
-    Set tree2 {tree1};
+    Set set1 {12, 3, 5, -7, 8, 12, 5, 6, -9, -7, 21, 21, 22, 345, 7, 3, 4};
+    Set set2 {22, 21, 12, 21, 5, 3, 3, 3, 8, 7, 8, 6, -7, 3, 12, -9, 4, 345};
 
-    EXPECT_EQ(tree1.size(), tree2.size());
-    
-    for (auto itr1 = tree1.cbegin(), itr2 = tree2.cbegin(),
-    end1 = tree1.cend(), end2 = tree2.cend(); itr1 != end1 && itr2 != end2; ++itr1, ++itr2)
-        EXPECT_EQ(*itr1, *itr2);
-    
-    Set tree3 {};
-    EXPECT_EQ(tree3.size(), 0);
+    EXPECT_EQ(set1, set2);
+    EXPECT_EQ(set2, set1);
 
-    auto tree4 {std::move(tree1)};
-    EXPECT_EQ(tree4.size(), tree2.size());
+    Set set3 {};
+    Set set4 {};
 
-    for (auto itr4 = tree4.cbegin(), itr2 = tree2.cbegin(),
-    end4 = tree4.cend(), end2 = tree2.cend(); itr4 != end4 && itr2 != end2; ++itr4, ++itr2)
-        EXPECT_EQ(*itr4, *itr2);
-
-    Set tree5 {};
-    EXPECT_EQ(tree5.size(), 0);
-
-    tree5 = std::move(tree2);
-
-    for (auto itr4 = tree4.cbegin(), itr5 = tree5.cbegin(),
-    end4 = tree4.cend(), end5 = tree5.cend(); itr4 != end4 && itr5 != end5; ++itr4, ++itr5)
-        EXPECT_EQ(*itr4, *itr5);
+    EXPECT_EQ(set3, set4);
+    EXPECT_EQ(set4, set3);
 }
 
-TEST(Tree, erase)
+TEST(Set, big_five)
 {
-    Set tree {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    Set set {1, 2, 3, 4, -10, 5, 8, 9, 11};
+    
+    // copy ctor 
+    Set set1 {set};
+    EXPECT_EQ(set1, set);
 
-    auto er1 = tree.erase(1);
+    // move ctor
+    Set set2 {std::move(set1)};
+    EXPECT_EQ(set2, set);
+
+    // move assign
+    Set set3 {};
+    EXPECT_EQ(set3.size(), 0);
+    set3 = std::move(set2);
+    EXPECT_EQ(set3, set);
+
+    //copy assign
+    Set set4 {1, 2, 3};
+    EXPECT_EQ(set4.size(), 3);
+    set4 = set;
+    EXPECT_EQ(set4, set);
+}
+
+TEST(Set, erase)
+{
+    Set set {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+
+    auto er1 = set.erase(1);
     EXPECT_EQ(*er1, 2);
-    EXPECT_EQ(*tree.erase(er1), 3);
+    EXPECT_EQ(*set.erase(er1), 3);
 
-    auto citr = tree.cbegin();
-    EXPECT_EQ(*tree.erase(citr), 3);
+    auto citr = set.cbegin();
+    EXPECT_EQ(*set.erase(citr), 3);
 
-    Set tree1 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-    auto itr1 = std::next(tree1.begin(), 6);
-    auto itr2 = std::next(tree1.begin(), 12);
+    Set set1 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    auto itr1 = std::next(set1.begin(), 6);
+    auto itr2 = std::next(set1.begin(), 12);
 
-    EXPECT_EQ(*tree1.erase(itr1, itr2), 12);
+    EXPECT_EQ(*set1.erase(itr1, itr2), 12);
 
-    Set tree2 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-    auto citr1 = std::next(tree2.cbegin(), 6);
-    auto citr2 = std::next(tree2.cbegin(), 12);
+    Set set2 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    auto citr1 = std::next(set2.cbegin(), 6);
+    auto citr2 = std::next(set2.cbegin(), 12);
 
-    EXPECT_EQ(*tree2.erase(citr1, citr2), 12);
+    EXPECT_EQ(*set2.erase(citr1, citr2), 12);
 }
 
-TEST(Tree, bounds)
+TEST(Set, bounds)
 {
-    Set tree {-5, -4, -3, 6, 8, 9, 10, 11, 15, 17};
+    Set set {-5, -4, -3, 6, 8, 9, 10, 11, 15, 17};
 
-    EXPECT_EQ(*tree.upper_bound(-4), -3);
-    EXPECT_EQ(*tree.upper_bound(6), 8);
-    EXPECT_EQ(*tree.upper_bound(7), 8);
-    EXPECT_EQ(*tree.upper_bound(13), 15);
-    EXPECT_EQ(*tree.upper_bound(15), 17);
+    EXPECT_EQ(*set.upper_bound(-4), -3);
+    EXPECT_EQ(*set.upper_bound(6), 8);
+    EXPECT_EQ(*set.upper_bound(7), 8);
+    EXPECT_EQ(*set.upper_bound(13), 15);
+    EXPECT_EQ(*set.upper_bound(15), 17);
 
-    EXPECT_EQ(*tree.lower_bound(-5), -5);
-    EXPECT_EQ(*tree.lower_bound(0), 6);
-    EXPECT_EQ(*tree.lower_bound(-4), -4);
-    EXPECT_EQ(*tree.lower_bound(6), 6);
-    EXPECT_EQ(*tree.lower_bound(7), 8);
+    EXPECT_EQ(*set.lower_bound(-5), -5);
+    EXPECT_EQ(*set.lower_bound(0), 6);
+    EXPECT_EQ(*set.lower_bound(-4), -4);
+    EXPECT_EQ(*set.lower_bound(6), 6);
+    EXPECT_EQ(*set.lower_bound(7), 8);
 }
 
 TEST(BoostSet, big_five_and_insert)
 {
     BoostSet set {1, 2, 3, 4, 5, 6, 7, 8, 12, 34, -7, -9, 15, 3};
     set.insert(9);
+    set.insert(13);
+    set.insert(23);
+    std::array<int, 16> arr = {-9, -7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 23, 34};
+    auto i = 0;
+    for (auto x: set)
+        EXPECT_EQ(x, arr[i++]);
     
     // copy ctor
     BoostSet set_cpy {set};
-    EXPECT_EQ(set.size(), set_cpy.size());
-    for (auto itr = set.begin(), itr_cpy = set_cpy.begin(), end = set.end(), end_cpy = set_cpy.end();
-        itr != end && itr_cpy != end_cpy; ++itr, ++itr_cpy)
-        EXPECT_EQ(*itr, *itr_cpy);
+    EXPECT_EQ(set_cpy, set);
 
     BoostSet set_cpy1 {1, 2, 3};
     set_cpy1 = set;
-    EXPECT_EQ(set.size(), set_cpy1.size());
-    for (auto itr = set.begin(), itr_cpy1 = set_cpy1.begin(), end = set.end(), end_cpy1 = set_cpy1.end();
-        itr != end && itr_cpy1 != end_cpy1; ++itr, ++itr_cpy1)
-        EXPECT_EQ(*itr, *itr_cpy1);
-
+    EXPECT_EQ(set_cpy1, set);
 
     // move ctor
     BoostSet set_move {std::move(set_cpy)};
-    EXPECT_EQ(set.size(), set_move.size());
-    for (auto itr = set.begin(), itr_move = set_move.begin(), end = set.end(), end_move = set_move.end();
-        itr != end && itr_move != end_move; ++itr, ++itr_move)
-        EXPECT_EQ(*itr, *itr_move);
+    EXPECT_EQ(set_move, set);
 
     // move assign
     BoostSet set_move1 {1, 2, 3};
     set_move1 = std::move(set_move);
-    EXPECT_EQ(set.size(), set_move1.size());
-    for (auto itr = set.begin(), itr_move1 = set_move1.begin(), end = set.end(), end_move1 = set_move1.end();
-        itr != end && itr_move1 != end_move1; ++itr, ++itr_move1)
-        EXPECT_EQ(*itr, *itr_move1);
+    EXPECT_EQ(set_move1, set);
+}
+
+TEST(BoostSet, kth_smallest)
+{
+    BoostSet set = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    set.insert(-1);
+    set.insert(13);
+    set.insert(0);
+
+    std::array<int, 15> arr = {-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+    for (auto i = 0; i < 15; i++)
+        EXPECT_EQ(set[i], arr[i]);
+}
+
+TEST(BoostSet, number_less_than)
+{
+    BoostSet set = {0, 1, 2, 3, 7, 9, 11, 15, 20, 21, 56, 70};
+    EXPECT_EQ(set.number_less_than(0), 0);
+    EXPECT_EQ(set.number_less_than(-1), 0);
+    EXPECT_EQ(set.number_less_than(1), 1);
+    EXPECT_EQ(set.number_less_than(2), 2);
+    EXPECT_EQ(set.number_less_than(3), 3);
+    EXPECT_EQ(set.number_less_than(4), 4);
+    EXPECT_EQ(set.number_less_than(5), 4);
+    EXPECT_EQ(set.number_less_than(6), 4);
+    EXPECT_EQ(set.number_less_than(7), 4);
+    EXPECT_EQ(set.number_less_than(8), 5);
+    EXPECT_EQ(set.number_less_than(9), 5);
+    EXPECT_EQ(set.number_less_than(10), 6);
+    EXPECT_EQ(set.number_less_than(11), 6);
+    EXPECT_EQ(set.number_less_than(12), 7);
+    EXPECT_EQ(set.number_less_than(13), 7);
+    EXPECT_EQ(set.number_less_than(14), 7);
+    EXPECT_EQ(set.number_less_than(15), 7);
+    EXPECT_EQ(set.number_less_than(16), 8);
+    EXPECT_EQ(set.number_less_than(19), 8);
+    EXPECT_EQ(set.number_less_than(20), 8);
+    EXPECT_EQ(set.number_less_than(21), 9);
+    EXPECT_EQ(set.number_less_than(22), 10);
+    EXPECT_EQ(set.number_less_than(56), 10);
+    EXPECT_EQ(set.number_less_than(57), 11);
+    EXPECT_EQ(set.number_less_than(69), 11);
+    EXPECT_EQ(set.number_less_than(70), 11);
+    EXPECT_EQ(set.number_less_than(71), 12);
+    EXPECT_EQ(set.number_less_than(100), 12);
+    EXPECT_EQ(set.number_less_than(150), 12);
+    EXPECT_EQ(set.number_less_than(420), 12);
 }
 
 int main(int argc, char **argv)

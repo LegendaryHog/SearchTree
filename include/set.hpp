@@ -42,6 +42,13 @@ public:
     using base::lower_bound;
     using base::upper_bound;
     using base::debug_graph_dump;
+    using base::equal_to;
 };
+
+template<typename KeyT, class Cmp>
+bool operator==(const Set<KeyT, Cmp>& lhs, const Set<KeyT, Cmp>& rhs)
+{
+    return lhs.equal_to(rhs);
+}
 
 } // namespace Container

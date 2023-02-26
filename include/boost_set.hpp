@@ -41,8 +41,9 @@ public:
     using base::lower_bound;
     using base::upper_bound;
     using base::debug_graph_dump;
+    using base::equal_to;
 
-    const key_type& operator[](size_type index) const noexcept
+    const key_type& kth_smallest(size_type index) const noexcept
     {
         node_ptr current = root_;
         while (current->left_->size_ != index)
@@ -55,5 +56,66 @@ public:
             }
         return current->key_;
     }
+private:
+    using base::key_less;
+
+public:
+    const key_type& operator[](size_type index) const noexcept
+    {
+        return kth_smallest(index);
+    }
+
+    size_type number_less_than(const key_type& key) const noexcept
+    {
+        size_type number = 0;
+        node_ptr current = root_;
+        while (current != Null_)
+            if (key_less(current->key_, key))
+            {
+                number += current->left_->size_ + 1;
+                current = current->right_;
+            }
+            else
+                current = current->left_;
+        return number;
+    }
 };
+
+template<typename KeyT, class Cmp>
+bool operator==(const BoostSet<KeyT, Cmp>& lhs, const BoostSet<KeyT, Cmp>& rhs)
+{
+    return lhs.equal_to(rhs);
+}
+/*\
+    Public enemy number one
+    Jailbreak and a smoking gun
+    You won't believe the things I've done
+    And the killing is just for fun
+
+    Public enemy number one
+    A stolen car and I'm on the run
+    Through the night 'til the rising sun
+    And the trouble has just begun
+
+    Roses on your grave
+    I'll be on my way
+    There's no time to stay
+    With the enemies I've made
+
+    I'm invincible
+    You might say despicable
+    Punishment's reciprocal
+    Public enemy number one
+
+    I'm unbeatable
+    My mind is untreatable
+    Crimes unrepeatable
+    Public enemy number one
+\*/
+template<typename KeyT, class Cmp = std::less<KeyT>>
+std::size_t operator->*(const BoostSet<KeyT, Cmp>& set, const KeyT& key)
+{
+    return set.number_less_than(key);
+}
+
 } // namespace Container
