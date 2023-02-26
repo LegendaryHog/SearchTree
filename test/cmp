@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+while getopts c: way
+do
+    case ${way} in
+        c) path=${OPTARG};;
+    esac
+done
+
+
+boost="${path}"/task/boost/boost
+my_set="${path}"/task/my_set/my_set
+std_set="${path}"/task/std_set/std_set
+
+for i in $(seq 3 1 $#)
+do
+    echo ""
+    ./$boost <$3 >'boost_tmp'
+    ./$my_set <$3 >'my_set_tmp'
+    ./$std_set <$3 >'std_set_tmp'
+    if diff -s boost_tmp my_set_tmp > 'thrash'
+    then
+        echo "$((i - 2)): boost   equal to     my_set"
+    else
+        echo "$((i - 2)): boost   not equal to my_set:"
+        echo "boost:"
+        cat boost_tmp
+        echo "my_set:"
+        cat my_set_tmp
+    fi
+    if diff -s boost_tmp std_set_tmp > 'thrash'
+    then
+        echo "$((i - 2)): boost   equal to     std_set"
+    else
+        echo "$((i - 2)): boost   not equal to std_set:"
+        echo "boost:"
+        cat boost_tmp
+        echo "std_set:"
+        cat std_set_tmp
+    fi
+    if diff -s std_set_tmp my_set_tmp > 'thrash'
+    then
+        echo "$((i - 2)): std_set equal to     my_set"
+    else
+        echo "$((i - 2)): std_set not equal to my_set:"
+        echo "std_set:"
+        cat std_set_tmp
+        echo "my_set"
+        cat my_set_tmp
+    fi
+    rm boost_tmp my_set_tmp std_set_tmp thrash
+done
+

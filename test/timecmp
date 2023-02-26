@@ -1,0 +1,24 @@
+while getopts c: way
+do
+    case ${way} in
+        c) path=${OPTARG};;
+    esac
+done
+
+
+boost="${path}"/task/boost/boost
+my_set="${path}"/task/my_set/my_set
+std_set="${path}"/task/std_set/std_set
+
+for i in $(seq 3 1 $#)
+do
+    echo "$((i - 2)):"
+    echo "boost:"
+    time ./$boost <$3 >'boost_tmp'
+    echo ""
+    echo "std_set:"
+    time ./$std_set <$3 >'std_set_tmp'
+    echo ""
+    rm boost_tmp my_set_tmp std_set_tmp
+done
+
