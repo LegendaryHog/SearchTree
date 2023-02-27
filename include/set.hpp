@@ -10,7 +10,6 @@ class Set final : public detail::RBSearchTree<KeyT, Cmp>
     using typename base::node_ptr;
     using typename base::node_type;
     using typename base::key_type;
-    using typename base::Colors;
 public:
     using typename base::Iterator;
     using typename base::ConstIterator;

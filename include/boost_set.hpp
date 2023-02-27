@@ -12,7 +12,6 @@ class BoostSet final : public detail::RBSearchTree<KeyT, Cmp, detail::RBSubTreeR
     using typename base::node_type;
     using typename base::key_type;
     using typename base::size_type;
-    using typename base::Colors;
     using typename base::Iterator;
     using typename base::ConstIterator;
     

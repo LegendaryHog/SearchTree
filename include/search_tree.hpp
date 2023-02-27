@@ -1,7 +1,6 @@
 #pragma once
 #include <functional>
 #include <fstream>
-#include <cassert>
 #include <string>
 #include "node.hpp"
 #include "search_tree_iterator.hpp"
@@ -22,7 +21,6 @@ protected:
     using key_type       = KeyT;
     using reference      = key_type&;
     using size_type      = typename std::size_t;
-    using Colors         = Colors;
 protected:
     using ConstIterator = detail::SearchTreeIterator<const key_type, node_type>;
     using Iterator = ConstIterator;
@@ -306,11 +304,6 @@ private:
 
     void insert_by_ptr(node_ptr node) noexcept
     {
-        assert(node != nullptr);
-        assert(node->color_ == Colors::Red);
-        assert(node->left_ == Null_);
-        assert(node->right_ == Null_);
-
         // increment size
         size_++;
 
