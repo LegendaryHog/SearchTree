@@ -67,11 +67,45 @@ You can see that BoostSet beat and destroy Set and std::set like childrens, but 
 
 
 ## class RBSearchTree
-It is a base for Container::Set and Container::BoostSet, it is a Red-Black self-balancing tree, all algorithm based on Introduction to Algorithms by Thomas H. Cormen, I did so much comments for all steps of algorithm (expect fixing invariants after erase) and made pictures for betted understanding. RBSearchTree locates in `include/search_tree.hpp`, Iterator locates in `search_tree_iterator.hpp`. I deligate work in rebalance invariants of given Node to Node (if this Node had any invariants). I do that to simplify writing other container basing on RBSearchTree. RBSearchTree has no public members and exist only to be base for other containers.
+It is a base for Container::Set and Container::BoostSet, it is a Red-Black self-balancing tree, all algorithm based on Introduction to Algorithms by Thomas H. Cormen, I did so much comments for all steps of algorithm (except fixing invariants after erase) and made pictures for betted understanding. RBSearchTree locates in `include/search_tree.hpp`, Iterator locates in `search_tree_iterator.hpp`. I deligate work in rebalance invariants of given Node to Node (if this Node had any invariants). I do that to simplify writing other container basing on RBSearchTree. RBSearchTree has no public members and exist only to be base for other containers.
+Complexity of operations:
+size - size of Tree
+N - distance(f, l)
+|Operation:  |Complexity |
+|------------|-----------|
+|insert(key) |log(size)  |
+|insert(f, l)|N * log(size) + N|
+|find(key)   |log(size)  |
+|erase(key/itr)|log(size)|
+|erase(f, l) | N * log(size) - N|
+|upper_bound(key)|log(size)|
+|lower_bound(key)|log(size)|
+|begin()/cbegin()| constant|
+|end()/cend()| constant|
+|equal_to(set)|size * log(size)|
+
+Complexity operations with iterators:
+
+|Operation:|Complexity:|
+|----------|-----------|
+|`opeartor++`(int/void)|log(size)|
+|`operator--`(int/void)|log(size)|
+
 
 ## class Set
-It is poor (but strong) copy od std::set. Locates in `include/set.hpp`
+It is poor (but strong) copy od std::set. Locates in `include/set.hpp`. It is just a RBSearchTree with default node.
+
+Complexity of all operations with container and iterator is same to RBSeacrhTree
 
 ## class BoostSet
 It is Set made for problem HWT, this tree use not common R-B Node, Node of this tree keep size of own SubTree to speed up search of k-th smallest and count of elements smaller than given. It has two methods for this and overloaded operators[] and operator->*(for fun) to this tasks. But You can't erase from this set, because save size of sub tree while erase fix up is impossible (or to difficult for me).
 Locates in `include/boost_set.hpp`, node for this tree in `include/boost_node.hpp`
+
+Complexity of all operations with container and iterator is the same with RBSearchTree (except erase).
+Complexity of new operations:
+|Operation:|Complexity:|
+|----------|-----------|
+|kth_smallest(ind)|log(size)|
+|`operator[]`(ind)|log(size)|
+|number_less_than(key)|log(size)|
+|`operator->*`(set, key)|log(size)|
