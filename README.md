@@ -55,13 +55,30 @@ chmod "+x" timecmp
 ./timecmp -c [path from this directory to build/] [files with tests]
 ```
 
-On tests with 100.000 requests results is:
+In 10 tests with 50.000 requests average results is:
 
-|Set:    | Time:      |
+|Set:    | Time(sec): |
 |--------|------------|
-|boost   | ~ 0.284sec |
-|my_set  | ~ 10.867sec|
-|std_set | ~ 11.248sec|
+|boost   | 0.137      |
+|my_set  | 2.329      |
+|std_set | 2.431      |
+
+
+In 10 tests with 100.000 requests average results is:
+
+|Set:    | Time(sec): |
+|--------|------------|
+|boost   | 0.284      |
+|my_set  | 10.867     |
+|std_set | 11.248     |
+
+In 10 tests with 200.000 requsets average results is:
+
+|Set:   |Time(sec):     |
+|-------|----------|
+|boost  |0.537     |
+|my_set |62.533    |
+|std_set|63.203    |
 
 You can see that BoostSet beat and destroy Set and std::set like childrens, but I'm very surprised that my own Set beat std::set by result of 10 random tests. All tests was run in Release version, in Debug std::set solve test in average of 14sec, my Set solve in average of 20sec.
 
