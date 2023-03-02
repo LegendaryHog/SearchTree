@@ -7,4 +7,6 @@ logs/
 *.dot
 *.svg
 .vscode
+!CMakeFiles.txt
+
 
