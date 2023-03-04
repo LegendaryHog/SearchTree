@@ -6,15 +6,18 @@ namespace Container
 namespace detail
 {
 
-template<typename KeyT, typename Node>
+template<typename KeyT, class Cmp, typename Node>  
+class RBSearchTree;
+
+template<typename KeyT, class Cmp,  typename Node>
 class SearchTreeIterator
 {
 public:
     using iterator_category = typename std::bidirectional_iterator_tag;
     using difference_type   = typename std::ptrdiff_t;
     using value_type        = KeyT;
-    using pointer           = KeyT*;
-    using reference         = KeyT&;
+    using const_pointer     = KeyT*;
+    using const_reference   = KeyT&;
     using node_ptr          = Node*;
     using const_node_ptr    = const Node*;
 private:
@@ -26,12 +29,12 @@ public:
     :node_ {node}, Null_ {Null}
     {}
 
-    reference operator*() const
+    const_reference operator*() const
     {
         return node_->key_;
     }
 
-    pointer operator->() const
+    const_pointer operator->() const
     {
         return &(node_->key_);
     }
@@ -88,14 +91,16 @@ public:
         return cpy;
     }
 
+    bool operator==(const SearchTreeIterator& rhs) const
+    {
+        return node_ == rhs.node_;
+    }
+
+protected:
     node_ptr base() const {return node_;}
+    
+public:
+    friend class RBSearchTree<KeyT, Cmp, Node>;
 }; // class SearchTreeIterator
-
-template<typename KeyT, typename Node>
-bool operator==(const SearchTreeIterator<KeyT, Node>& lhs, const SearchTreeIterator<KeyT, Node>& rhs)
-{
-    return (lhs.base() == rhs.base());
-}
 } // namespace detail
-
 } // namespace Container

@@ -4,29 +4,27 @@
 #include <string>
 #include "node.hpp"
 #include "search_tree_iterator.hpp"
-#include <unordered_map>
 
 namespace Container
 {
 
 namespace detail
 {
-template<typename KeyT = int, class Cmp = std::less<KeyT>, typename Node = RBNode<KeyT>>  
+template<typename KeyT, class Cmp, typename Node>  
 class RBSearchTree
 {
 protected:
     using node_type      = Node;
     using node_ptr       = Node*;
-    using const_node_ptr = const node_type*;
+    using const_node_ptr = const Node*;
     using key_type       = KeyT;
-    using reference      = key_type&;
     using size_type      = typename std::size_t;
 protected:
-    using ConstIterator = detail::SearchTreeIterator<const key_type, node_type>;
+    using ConstIterator = SearchTreeIterator<key_type, Cmp, node_type>;
     using Iterator = ConstIterator;
 
 private:
-    node_ptr null_init()
+    static node_ptr null_init()
     {
         auto Null = new node_type{key_type{}, Colors::Black};
         Null->left_   = Null;

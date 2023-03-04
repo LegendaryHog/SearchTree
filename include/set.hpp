@@ -4,9 +4,9 @@
 namespace Container
 {
 template<typename KeyT = int, class Cmp = std::less<KeyT>>
-class Set final : public detail::RBSearchTree<KeyT, Cmp>
+class Set final : public detail::RBSearchTree<KeyT, Cmp, detail::RBNode<KeyT>>
 {
-    using base = detail::RBSearchTree<KeyT, Cmp>;
+    using base = detail::RBSearchTree<KeyT, Cmp, detail::RBNode<KeyT>>;
     using typename base::node_ptr;
     using typename base::node_type;
     using typename base::key_type;
