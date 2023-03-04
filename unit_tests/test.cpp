@@ -22,8 +22,8 @@ TEST(Set, insert)
             set.insert(i + 20);
     }
 
-    Set set1 {12, 1, 4, 5, -4, 8, 7, -9};
-    Set set2 {12, 1, 4, 5, -4, 8, 7, -9};
+    Set<int> set1 {12, 1, 4, 5, -4, 8, 7, -9};
+    Set<int> set2 {12, 1, 4, 5, -4, 8, 7, -9};
     std::array<int, 10> arr1 {2, 7, 12, 100, -12, 56, 10, 9, 11, 5};
     std::array<int, 15> res {-12, -9, -4, 1, 2, 4, 5, 7, 8, 9, 10, 11, 12, 56, 100};
 
@@ -43,7 +43,7 @@ TEST(Set, insert)
 
 TEST(Set, init_list_and_cont_ctor)
 {
-    Set set0 {1, -4, -2, 8, 9, -20, 10, 34, 17, 1, 1, 9, 17, 21};
+    Set<int> set0 {1, -4, -2, 8, 9, -20, 10, 34, 17, 1, 1, 9, 17, 21};
     std::array<int, 14> arr {1, -4, -2, 8, 9, -20, 10, 34, 17, 1, 1, 9, 17, 21};
     Set set1 (arr.cbegin(), arr.cend());
     std::array<int, 10> res {-20, -4, -2, 1, 8, 9, 10, 17, 21, 34};
@@ -65,17 +65,17 @@ TEST(Set, Iterators)
 
     std::array<int, 8> arr {-2, 1, 2, 4, 5, 6, 7, 9};
 
-    Set set1 {1, 2, 4, 7, 9, -2, 5, 6};
+    Set<int> set1 {1, 2, 4, 7, 9, -2, 5, 6};
     std::size_t i = 0;
     for (auto x: set1)
         EXPECT_EQ(x, arr[i++]);
 
-    const Set cset {1, 2, 4, 7, 9, -2, 5, 6};
+    const Set<int> cset {1, 2, 4, 7, 9, -2, 5, 6};
     i = 0;
     for (auto x: cset)
         EXPECT_EQ(x, arr[i++]);
 
-    Set set {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    Set<int> set {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     EXPECT_EQ(11, *std::prev(set.end()));
     EXPECT_EQ(11, *std::prev(set.cend()));
 
@@ -100,8 +100,8 @@ TEST(Set, Iterators)
 
 TEST(Set, equal_to)
 {
-    Set set1 {12, 3, 5, -7, 8, 12, 5, 6, -9, -7, 21, 21, 22, 345, 7, 3, 4};
-    Set set2 {22, 21, 12, 21, 5, 3, 3, 3, 8, 7, 8, 6, -7, 3, 12, -9, 4, 345};
+    Set<int> set1 {12, 3, 5, -7, 8, 12, 5, 6, -9, -7, 21, 21, 22, 345, 7, 3, 4};
+    Set<int> set2 {22, 21, 12, 21, 5, 3, 3, 3, 8, 7, 8, 6, -7, 3, 12, -9, 4, 345};
 
     EXPECT_EQ(set1, set2);
     EXPECT_EQ(set2, set1);
@@ -115,7 +115,7 @@ TEST(Set, equal_to)
 
 TEST(Set, big_five)
 {
-    Set set {1, 2, 3, 4, -10, 5, 8, 9, 11};
+    Set<int> set {1, 2, 3, 4, -10, 5, 8, 9, 11};
     
     // copy ctor 
     Set set1 {set};
@@ -132,7 +132,7 @@ TEST(Set, big_five)
     EXPECT_EQ(set3, set);
 
     //copy assign
-    Set set4 {1, 2, 3};
+    Set<int> set4 {1, 2, 3};
     EXPECT_EQ(set4.size(), 3);
     set4 = set;
     EXPECT_EQ(set4, set);
@@ -140,7 +140,7 @@ TEST(Set, big_five)
 
 TEST(Set, erase)
 {
-    Set set {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    Set<int> set {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
     auto er1 = set.erase(1);
     EXPECT_EQ(*er1, 2);
@@ -149,13 +149,13 @@ TEST(Set, erase)
     auto citr = set.cbegin();
     EXPECT_EQ(*set.erase(citr), 3);
 
-    Set set1 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    Set<int> set1 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
     auto itr1 = std::next(set1.begin(), 6);
     auto itr2 = std::next(set1.begin(), 12);
 
     EXPECT_EQ(*set1.erase(itr1, itr2), 12);
 
-    Set set2 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    Set<int> set2 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
     auto citr1 = std::next(set2.cbegin(), 6);
     auto citr2 = std::next(set2.cbegin(), 12);
 
@@ -164,7 +164,7 @@ TEST(Set, erase)
 
 TEST(Set, bounds)
 {
-    Set set {-5, -4, -3, 6, 8, 9, 10, 11, 15, 17};
+    Set<int> set {-5, -4, -3, 6, 8, 9, 10, 11, 15, 17};
 
     EXPECT_EQ(*set.upper_bound(-4), -3);
     EXPECT_EQ(*set.upper_bound(6), 8);
@@ -181,7 +181,7 @@ TEST(Set, bounds)
 
 TEST(BoostSet, big_five_and_insert)
 {
-    BoostSet set {1, 2, 3, 4, 5, 6, 7, 8, 12, 34, -7, -9, 15, 3};
+    BoostSet<int> set {1, 2, 3, 4, 5, 6, 7, 8, 12, 34, -7, -9, 15, 3};
     set.insert(9);
     set.insert(13);
     set.insert(23);
@@ -194,7 +194,7 @@ TEST(BoostSet, big_five_and_insert)
     BoostSet set_cpy {set};
     EXPECT_EQ(set_cpy, set);
 
-    BoostSet set_cpy1 {1, 2, 3};
+    BoostSet<int> set_cpy1 {1, 2, 3};
     set_cpy1 = set;
     EXPECT_EQ(set_cpy1, set);
 
@@ -203,14 +203,14 @@ TEST(BoostSet, big_five_and_insert)
     EXPECT_EQ(set_move, set);
 
     // move assign
-    BoostSet set_move1 {1, 2, 3};
+    BoostSet<int> set_move1 {1, 2, 3};
     set_move1 = std::move(set_move);
     EXPECT_EQ(set_move1, set);
 }
 
 TEST(BoostSet, kth_smallest)
 {
-    BoostSet set = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    BoostSet<int> set {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     set.insert(-1);
     set.insert(13);
     set.insert(0);
@@ -222,7 +222,7 @@ TEST(BoostSet, kth_smallest)
 
 TEST(BoostSet, number_less_than)
 {
-    BoostSet set = {0, 1, 2, 3, 7, 9, 11, 15, 20, 21, 56, 70};
+    BoostSet<int> set = {0, 1, 2, 3, 7, 9, 11, 15, 20, 21, 56, 70};
     EXPECT_EQ(set.number_less_than(0), 0);
     EXPECT_EQ(set.number_less_than(-1), 0);
     EXPECT_EQ(set.number_less_than(1), 1);
