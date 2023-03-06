@@ -19,7 +19,6 @@ protected:
     using const_node_ptr = const Node*;
     using key_type       = KeyT;
     using size_type      = typename std::size_t;
-protected:
     using ConstIterator = SearchTreeIterator<key_type, Cmp, node_type>;
     using Iterator = ConstIterator;
 
@@ -47,7 +46,6 @@ protected:
     }
 
 //----------------------------------------=| Ctors start |=---------------------------------------------
-public:
     RBSearchTree() = default;
 
     template<std::input_iterator InpIt>
@@ -55,7 +53,7 @@ public:
     {   
         RBSearchTree tmp {};
         tmp.insert(first, last);
-        std::swap(*this, tmp);
+        swap(tmp);
     }
 
     RBSearchTree(std::initializer_list<key_type> initlist)
@@ -83,7 +81,7 @@ private:
         std::swap(size_, rhs.size_);
     }
 
-public:
+protected:
     RBSearchTree(RBSearchTree&& other)
     {
         swap(other);
@@ -125,7 +123,7 @@ public:
                 tmp_current   = tmp_current->parent_;
             }
 
-        std::swap(*this, tmp);
+        swap(tmp);
         
         Null_->left_  = detail::find_min(root_, Null_);
         Null_->right_ = detail::find_max(root_, Null_);
@@ -134,7 +132,7 @@ public:
     RBSearchTree& operator=(const RBSearchTree& rhs)
     {
         auto rhs_cpy {rhs};
-        std::swap(*this, rhs_cpy);
+        swap(rhs_cpy);
         return *this;
     }
 
@@ -262,7 +260,6 @@ protected:
 //----------------------------------------=| begin/end end |=-------------------------------------------
 
 //----------------------------------------=| Find start |=----------------------------------------------
-protected:
     ConstIterator find(const key_type& key)
     {
         node_ptr node = root_;
@@ -485,7 +482,6 @@ private:
 //----------------------------------------=| Insert end |=----------------------------------------------
 
 //----------------------------------------=| Erase start |=---------------------------------------------
-private:
     // replace subtree with root u with subtree with root v
     void transplant(node_ptr u, node_ptr v) noexcept
     {
@@ -737,8 +733,7 @@ protected:
     ConstIterator upper_bound(const key_type& key) const {return ConstIterator{upper_bound_ptr(key), Null_};}
 //----------------------------------------=| Bounds end |=----------------------------------------------
 
-//----------------------------------------=| Graph dump start |=----------------------------------------
-protected:  
+//----------------------------------------=| Graph dump start |=----------------------------------------  
     void debug_graph_dump(const std::string& filename) const
     {   
         std::fstream file {filename + ".dot", std::ofstream::out | std::ofstream::trunc};
