@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <string>
 #define DEBUG
 #include "search_tree.hpp"
 #include "boost_set.hpp"
@@ -177,6 +178,82 @@ TEST(Set, bounds)
     EXPECT_EQ(*set.lower_bound(-4), -4);
     EXPECT_EQ(*set.lower_bound(6), 6);
     EXPECT_EQ(*set.lower_bound(7), 8);
+}
+
+class StandUser
+{
+    std::string name_, stand_name_;
+    unsigned strength_, speed_, range_;
+public:
+    StandUser() = default;
+
+    StandUser(const std::string& n, const std::string& sn, unsigned st, unsigned sp, unsigned r)
+    :name_ {n}, stand_name_ {sn}, strength_ {st}, speed_ {sp}, range_ {r}
+    {}
+
+    StandUser(std::string&& n, std::string&& sn, unsigned st, unsigned sp, unsigned r)
+    :name_ {std::move(n)}, stand_name_ {std::move(sn)}, strength_ {st}, speed_ {sp}, range_ {r}
+    {}
+
+    const std::string& name()       const {return name_;}
+    const std::string& stand_name() const {return stand_name_;}
+    unsigned strength() const {return strength_;}
+    unsigned speed()    const {return speed_;}
+    unsigned range()    const {return range_;}
+
+    unsigned power() const
+    {
+        return strength_ * strength_ + speed_ * speed_ + range_ * range_;
+    }
+};
+
+bool operator<(const StandUser& lhs, const StandUser& rhs)
+{
+    auto lhs_power = lhs.power(), rhs_power = rhs.power();
+    if (lhs_power < rhs_power)
+        return true;
+    else if (lhs_power > rhs_power)
+        return false;
+    else if (lhs.strength() < rhs.strength())
+        return true;
+    else if (lhs.strength() > rhs.strength())
+        return false;
+    else if (lhs.range() < rhs.range())
+        return true;
+    else if (lhs.range() > rhs.range())
+        return false;
+    else
+        return lhs.speed() < rhs.speed();
+}
+
+TEST(Set, struct_Key)
+{
+    Set<StandUser> set {
+        {"Jotaro Kujo(Jostar)",        "Star Platinum",           100, 100, 20},
+        {"Joseph Jostar",              "Hermit Purple",           48,  36,  30},
+        {"Muhammad Avdol",             "Magician`s Red",          90,  47,  50},
+        {"Jean Pierre Polhareff",      "Silver Chariot",          80,  89,  30},
+        {"Noriaki Kakyon",             "Hierophant Green",        92,  68,  70},
+        {"Iggy",                       "The Fool",                93,  72,  20},
+        {"Dio Brando",                 "The World",               98,  100, 20},
+        
+        {"Giorno Giovanna(Brando)",    "Gold Experience Requiem", 150, 100, 20},
+        {"Bruno Bucciaratti",          "Sticky Fingers",          82,  93,  25},
+        {"Leone Abbachio",             "Moody Blues",             30,  75,  100},
+        {"Guido Mista",                "Sex Pistols",             86,  50,  80},
+        {"Narancia Ghirga",            "Aerosmith",               34,  90,  93},
+        {"Pannacota Fugo",             "Purple Haze",             95,  95,  25},
+        {"Trish Una",                  "Spice Girl",              78,  70,  30},
+        {"Diavolo Una",                "King Crimson",            120, 89,  100},
+
+        {"Josuke Higashikata(Jostar)", "Crazy Diamond",           99,  100, 20},
+        {"Koichi Hirose",              "Echoes (Act 3)",          90,  75,  50},
+        {"Okuyasu Nijimura",           "The Hand",                98,  69,  25},
+        {"Yoshikage Kira",             "Killer Queen",            110, 78,  30},
+    };
+
+    EXPECT_EQ(set.find({"", "", 99, 100, 20})->name(), "Josuke Higashikata(Jostar)");
+    EXPECT_EQ(set.maximum().name(), "Giorno Giovanna(Brando)");
 }
 
 TEST(BoostSet, big_five_and_insert)
