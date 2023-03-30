@@ -330,7 +330,7 @@ protected:
         return insert(std::move(key_cpy));
     }
 
-    std::pair<ConstIterator, bool> insert(key_type&& key) noexcept
+    std::pair<ConstIterator, bool> insert(key_type&& key)
     {
         auto parent = find_parent(key);
 
