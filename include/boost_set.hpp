@@ -64,7 +64,7 @@ public:
         return kth_smallest(index);
     }
 
-    size_type number_less_than(const key_type& key) const noexcept
+    size_type number_less_than(const key_type& key) const
     {
         size_type number = 0;
         node_ptr current = root_;

@@ -74,7 +74,7 @@ In 10 tests with 100.000 requests average results is:
 
 In 10 tests with 200.000 requsets average results is:
 
-|Set:   |Time(sec):     |
+|Set:   |Time(sec):|
 |-------|----------|
 |boost  |0.537     |
 |my_set |62.533    |
